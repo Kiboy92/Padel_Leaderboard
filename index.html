@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Padel Leaderboard</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --line:rgba(255,255,255,.12);
+      --text:#e9ecff; --muted:rgba(233,236,255,.72);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: radial-gradient(1200px 800px at 15% 0%, #1a2a6c 0%, #0b1020 55%);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px; margin:28px auto; padding:0 16px}
+    .card{
+      background: rgba(18,26,51,.86);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      box-shadow: 0 12px 35px rgba(0,0,0,.35);
+      backdrop-filter: blur(8px);
+    }
+    h1{margin:0; font-size:22px; letter-spacing:.3px}
+    .sub{margin-top:6px; color:var(--muted); font-size:13px}
+    .toolbar{
+      display:flex; gap:10px; flex-wrap:wrap;
+      justify-content:space-between; align-items:center;
+    }
+    .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    input,select{
+      padding:10px 12px; border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(11,16,32,.65);
+      color: var(--text);
+      outline:none;
+    }
+    input::placeholder{color:rgba(233,236,255,.45)}
+    .pill{
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(11,16,32,.55);
+      font-size:12px; color:var(--muted);
+    }
+
+    /* Podium */
+    .podium{
+      display:grid; gap:10px;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top:12px;
+    }
+    @media (max-width: 760px){
+      .podium{grid-template-columns:1fr}
+    }
+    .podiumCard{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background: rgba(11,16,32,.55);
+    }
+    .podiumTitle{font-size:20px}
+    .podiumMeta{margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35}
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:12px;
+      overflow:hidden;
+      border-radius:14px;
+    }
+    th,td{
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      text-align:left;
+    }
+    th{font-size:12px; color:rgba(233,236,255,.75)}
+    tbody tr:hover{background: rgba(159,176,255,.06)}
+    .num{text-align:right; font-variant-numeric: tabular-nums}
+    .muted{color:var(--muted); font-size:12px}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          <h1>Padel Leaderboard</h1>
+          <div class="sub">Top 3 podium + leaderboard dari Google Sheets (CSV). Auto refresh tiap 60 detik.</div>
+        </div>
+
+        <div class="right">
+          <input id="search" placeholder="Search nama..." />
+          <select id="sortBy" title="Sort">
+            <option value="points_desc">Points (tinggi → rendah)</option>
+            <option value="win_desc">Win (tinggi → rendah)</option>
+            <option value="played_desc">Played (tinggi → rendah)</option>
+            <option value="name_asc">Name (A → Z)</option>
+          </select>
+          <span class="pill">Total pemain: <b id="count">0</b></span>
+        </div>
+      </div>
+
+      <div id="podium" class="podium"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:52px">#</th>
+            <th>Name</th>
+            <th class="num">Played</th>
+            <th class="num">Win</th>
+            <th class="num">Lose</th>
+            <th class="num">Points</th>
+            <th class="num">Winrate</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+
+      <div class="muted" style="margin-top:10px">
+        Kalau datanya belum muncul: pastikan Google Sheets kamu sudah <i>Publish to web</i> sebagai CSV dan kolomnya sesuai.
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ✅ CSV URL kamu (sudah ditempel)
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQa_3k4XRT_CetrvxU0E2wlGlsis3bbt9mRFk85jfLb8w4FsGBxadPNPGQRdjkCU9_4Wywmu1wr2f9P/pub?gid=0&single=true&output=csv";
+
+  let rows = [];
+
+  const elTbody = document.getElementById("tbody");
+  const elSearch = document.getElementById("search");
+  const elSortBy = document.getElementById("sortBy");
+  const elCount  = document.getElementById("count");
+  const elPodium = document.getElementById("podium");
+
+  function toNum(v){
+    const n = Number(String(v ?? "").trim());
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // CSV parser lumayan aman (support quoted values)
+  function parseCSV(text){
+    const out = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      const next = text[i+1];
+
+      if (ch === '"' && inQuotes && next === '"') { // escaped quote
+        cur += '"'; i++; continue;
+      }
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+
+      if (!inQuotes && ch === ","){
+        row.push(cur); cur = ""; continue;
+      }
+      if (!inQuotes && (ch === "\n" || ch === "\r")){
+        if (ch === "\r" && next === "\n") i++;
+        row.push(cur);
+        // ignore empty trailing row
+        if (row.some(cell => String(cell).trim() !== "")) out.push(row);
+        row = []; cur = "";
+        continue;
+      }
+      cur += ch;
+    }
+    row.push(cur);
+    if (row.some(cell => String(cell).trim() !== "")) out.push(row);
+    return out;
+  }
+
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function winrate(p){
+    if (!p.played) return 0;
+    return (p.win / p.played) * 100;
+  }
+
+  function normalizeHeaders(h){
+    return String(h || "").trim().toLowerCase();
+  }
+
+  function toPlayers(parsed){
+    // Expected header: Name, Played, Win, Lose, Points (case-insensitive)
+    const header = parsed[0] || [];
+    const idx = {};
+    header.forEach((h, i) => idx[normalizeHeaders(h)] = i);
+
+    const required = ["name","played","win","lose","points"];
+    const missing = required.filter(k => !(k in idx));
+
+    if (missing.length){
+      // fallback: assume fixed order 0..4
+      return parsed.slice(1).map(cols => ({
+        name: (cols[0] || "").trim(),
+        played: toNum(cols[1]),
+        win: toNum(cols[2]),
+        lose: toNum(cols[3]),
+        points: toNum(cols[4]),
+      })).filter(p => p.name);
+    }
+
+    return parsed.slice(1).map(cols => ({
+      name: (cols[idx.name] || "").trim(),
+      played: toNum(cols[idx.played]),
+      win: toNum(cols[idx.win]),
+      lose: toNum(cols[idx.lose]),
+      points: toNum(cols[idx.points]),
+    })).filter(p => p.name);
+  }
+
+  function applyFilterSort(list){
+    const q = elSearch.value.trim().toLowerCase();
+    let out = q ? list.filter(p => p.name.toLowerCase().includes(q)) : [...list];
+
+    const mode = elSortBy.value;
+    out.sort((a,b)=>{
+      if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
+      if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
+      if (mode === "played_desc") return (b.played-a.played) || (b.points-a.points) || a.name.localeCompare(b.name);
+      if (mode === "name_asc") return a.name.localeCompare(b.name);
+      return 0;
+    });
+
+    return out;
+  }
+
+  function renderPodium(allRows){
+    const top = [...allRows]
+      .sort((a,b)=> (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name))
+      .slice(0,3);
+
+    const medals = ["🥇","🥈","🥉"];
+    elPodium.innerHTML = "";
+
+    if (top.length === 0){
+      elPodium.innerHTML = `<div class="muted">Belum ada data untuk podium.</div>`;
+      return;
+    }
+
+    top.forEach((p, i)=>{
+      const wr = winrate(p).toFixed(1) + "%";
+      const div = document.createElement("div");
+      div.className = "podiumCard";
+      div.innerHTML = `
+        <div class="podiumTitle">${medals[i]} <b>${escapeHtml(p.name)}</b></div>
+        <div class="podiumMeta">
+          Played: <b>${p.played}</b> • W: <b>${p.win}</b> • L: <b>${p.lose}</b><br/>
+          Points: <b>${p.points}</b> • Winrate: <b>${wr}</b>
+        </div>
+      `;
+      elPodium.appendChild(div);
+    });
+  }
+
+  function render(){
+    const list = applyFilterSort(rows);
+    elCount.textContent = String(rows.length);
+    elTbody.innerHTML = "";
+
+    if (rows.length === 0){
+      elTbody.innerHTML = `<tr><td colspan="7" class="muted">Data kosong / belum kebaca dari CSV.</td></tr>`;
+      return;
+    }
+
+    list.forEach((p, idx)=>{
+      const wr = winrate(p).toFixed(1) + "%";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="muted">${idx+1}</td>
+        <td><b>${escapeHtml(p.name)}</b></td>
+        <td class="num">${p.played}</td>
+        <td class="num">${p.win}</td>
+        <td class="num">${p.lose}</td>
+        <td class="num"><b>${p.points}</b></td>
+        <td class="num">${wr}</td>
+      `;
+      elTbody.appendChild(tr);
+    });
+  }
+
+  async function load(){
+    try{
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      const text = await res.text();
+      const parsed = parseCSV(text);
+
+      if (!parsed.length){
+        rows = [];
+        renderPodium(rows);
+        render();
+        return;
+      }
+
+      rows = toPlayers(parsed);
+      renderPodium(rows);
+      render();
+    } catch (err){
+      elTbody.innerHTML = `<tr><td colspan="7" class="muted">Gagal load data CSV. Cek publish settings / koneksi internet.</td></tr>`;
+      elPodium.innerHTML = "";
+      console.error(err);
+    }
+  }
+
+  elSearch.addEventListener("input", () => { render(); });
+  elSortBy.addEventListener("change", () => { render(); });
+
+  load();
+  setInterval(load, 60000);
+</script>
+</body>
+</html>
