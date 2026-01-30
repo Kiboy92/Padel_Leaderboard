@@ -60,26 +60,76 @@
       border-radius:16px;
       padding:12px;
       background: rgba(11,16,32,.55);
+      /* animation base */
+      transform: translateY(10px) scale(.98);
+      opacity: 0;
+      animation: podiumIn 650ms cubic-bezier(.2,.9,.2,1) forwards;
+      will-change: transform, opacity;
+    }
+    .podiumCard:hover{
+      transform: translateY(-2px) scale(1.01);
+      transition: transform 180ms ease;
     }
     .podiumTitle{font-size:20px}
     .podiumMeta{margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35}
+    .podiumGlow{
+      position: relative;
+      overflow: hidden;
+    }
+    .podiumGlow:before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 55%);
+      transform: rotate(12deg);
+      opacity:.55;
+      pointer-events:none;
+    }
+
+    @keyframes podiumIn{
+      0%   { opacity:0; transform: translateY(14px) scale(.97); filter: blur(1px); }
+      60%  { opacity:1; transform: translateY(0px)  scale(1.01); filter: blur(0px); }
+      100% { opacity:1; transform: translateY(0px)  scale(1); }
+    }
+
+    /* Table wrapper: helps mobile spacing + right padding */
+    .tableWrap{
+      margin-top:12px;
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 10px; /* makes last column not kiss the edge on iPhone */
+    }
 
     table{
       width:100%;
       border-collapse:collapse;
-      margin-top:12px;
       overflow:hidden;
       border-radius:14px;
+      min-width: 760px; /* so it won't squeeze columns too much on phones */
     }
     th,td{
       padding:10px;
       border-bottom:1px solid rgba(255,255,255,.08);
       text-align:left;
+      white-space: nowrap;
     }
     th{font-size:12px; color:rgba(233,236,255,.75)}
     tbody tr:hover{background: rgba(159,176,255,.06)}
     .num{text-align:right; font-variant-numeric: tabular-nums}
     .muted{color:var(--muted); font-size:12px}
+
+    /* ✅ Fix “Winrate mepet kanan”: add extra right padding for last column */
+    table th:last-child,
+    table td:last-child{
+      padding-right: 18px;
+    }
+
+    /* Mobile polish */
+    @media (max-width: 480px){
+      .wrap{padding:0 12px}
+      .card{padding:12px}
+      input,select{width: 100%;}
+      .right{width:100%;}
+    }
   </style>
 </head>
 
@@ -106,20 +156,22 @@
 
       <div id="podium" class="podium"></div>
 
-      <table>
-        <thead>
-          <tr>
-            <th style="width:52px">#</th>
-            <th>Name</th>
-            <th class="num">Played</th>
-            <th class="num">Win</th>
-            <th class="num">Lose</th>
-            <th class="num">Points</th>
-            <th class="num">Winrate</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:52px">#</th>
+              <th>Name</th>
+              <th class="num">Played</th>
+              <th class="num">Win</th>
+              <th class="num">Lose</th>
+              <th class="num">Points</th>
+              <th class="num">Winrate</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
 
       <div class="muted" style="margin-top:10px">
         Kalau datanya belum muncul: pastikan Google Sheets kamu sudah <i>Publish to web</i> sebagai CSV dan kolomnya sesuai.
@@ -128,7 +180,6 @@
   </div>
 
 <script>
-  // ✅ CSV URL kamu (sudah ditempel)
   const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQa_3k4XRT_CetrvxU0E2wlGlsis3bbt9mRFk85jfLb8w4FsGBxadPNPGQRdjkCU9_4Wywmu1wr2f9P/pub?gid=0&single=true&output=csv";
 
   let rows = [];
@@ -144,7 +195,7 @@
     return Number.isFinite(n) ? n : 0;
   }
 
-  // CSV parser lumayan aman (support quoted values)
+  // CSV parser (supports quoted values)
   function parseCSV(text){
     const out = [];
     let row = [];
@@ -155,18 +206,14 @@
       const ch = text[i];
       const next = text[i+1];
 
-      if (ch === '"' && inQuotes && next === '"') { // escaped quote
-        cur += '"'; i++; continue;
-      }
+      if (ch === '"' && inQuotes && next === '"') { cur += '"'; i++; continue; }
       if (ch === '"') { inQuotes = !inQuotes; continue; }
 
-      if (!inQuotes && ch === ","){
-        row.push(cur); cur = ""; continue;
-      }
+      if (!inQuotes && ch === ","){ row.push(cur); cur = ""; continue; }
+
       if (!inQuotes && (ch === "\n" || ch === "\r")){
         if (ch === "\r" && next === "\n") i++;
         row.push(cur);
-        // ignore empty trailing row
         if (row.some(cell => String(cell).trim() !== "")) out.push(row);
         row = []; cur = "";
         continue;
@@ -197,7 +244,6 @@
   }
 
   function toPlayers(parsed){
-    // Expected header: Name, Played, Win, Lose, Points (case-insensitive)
     const header = parsed[0] || [];
     const idx = {};
     header.forEach((h, i) => idx[normalizeHeaders(h)] = i);
@@ -205,8 +251,8 @@
     const required = ["name","played","win","lose","points"];
     const missing = required.filter(k => !(k in idx));
 
+    // fallback fixed order 0..4 if headers don’t match
     if (missing.length){
-      // fallback: assume fixed order 0..4
       return parsed.slice(1).map(cols => ({
         name: (cols[0] || "").trim(),
         played: toNum(cols[1]),
@@ -257,7 +303,11 @@
     top.forEach((p, i)=>{
       const wr = winrate(p).toFixed(1) + "%";
       const div = document.createElement("div");
-      div.className = "podiumCard";
+      div.className = "podiumCard podiumGlow";
+
+      // ✅ stagger animation delay (nice!)
+      div.style.animationDelay = `${i * 120}ms`;
+
       div.innerHTML = `
         <div class="podiumTitle">${medals[i]} <b>${escapeHtml(p.name)}</b></div>
         <div class="podiumMeta">
@@ -301,14 +351,11 @@
       const text = await res.text();
       const parsed = parseCSV(text);
 
-      if (!parsed.length){
-        rows = [];
-        renderPodium(rows);
-        render();
-        return;
-      }
+      rows = parsed.length ? toPlayers(parsed) : [];
 
-      rows = toPlayers(parsed);
+      // ✅ Re-trigger podium animation on refresh:
+      // Clear first so new nodes animate again
+      elPodium.innerHTML = "";
       renderPodium(rows);
       render();
     } catch (err){
@@ -318,8 +365,8 @@
     }
   }
 
-  elSearch.addEventListener("input", () => { render(); });
-  elSortBy.addEventListener("change", () => { render(); });
+  elSearch.addEventListener("input", render);
+  elSortBy.addEventListener("change", render);
 
   load();
   setInterval(load, 60000);
