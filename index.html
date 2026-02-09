@@ -149,6 +149,7 @@
             <option value="win_desc">Win (tinggi → rendah)</option>
             <option value="played_desc">Played (tinggi → rendah)</option>
             <option value="name_asc">Name (A → Z)</option>
+            <option value="winrate_desc">Winrate (tinggi → rendah)</option>
           </select>
           <span class="pill">Total pemain: <b id="count">0</b></span>
         </div>
@@ -279,6 +280,11 @@
     out.sort((a,b)=>{
       if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
       if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
+      if (mode === "winrate_desc") {
+  const wa = a.played ? a.win / a.played : 0;
+  const wb = b.played ? b.win / b.played : 0;
+  return (wb - wa) || (b.points - a.points) || a.name.localeCompare(b.name);
+}
       if (mode === "played_desc") return (b.played-a.played) || (b.points-a.points) || a.name.localeCompare(b.name);
       if (mode === "name_asc") return a.name.localeCompare(b.name);
       return 0;
