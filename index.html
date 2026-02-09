@@ -293,7 +293,7 @@
     return out;
   }
 
- function renderPodium(allRows){
+function renderPodium(allRows){
   const mode = elSortBy.value;
 
   const sorted = [...allRows].sort((a,b)=>{
@@ -334,33 +334,6 @@
     elPodium.appendChild(div);
   });
 }
-
-    const medals = ["🥇","🥈","🥉"];
-    elPodium.innerHTML = "";
-
-    if (top.length === 0){
-      elPodium.innerHTML = `<div class="muted">Belum ada data untuk podium.</div>`;
-      return;
-    }
-
-    top.forEach((p, i)=>{
-      const wr = winrate(p).toFixed(1) + "%";
-      const div = document.createElement("div");
-      div.className = "podiumCard podiumGlow";
-
-      // ✅ stagger animation delay (nice!)
-      div.style.animationDelay = `${i * 120}ms`;
-
-      div.innerHTML = `
-        <div class="podiumTitle">${medals[i]} <b>${escapeHtml(p.name)}</b></div>
-        <div class="podiumMeta">
-          Played: <b>${p.played}</b> • W: <b>${p.win}</b> • L: <b>${p.lose}</b><br/>
-          Points: <b>${p.points}</b> • Winrate: <b>${wr}</b>
-        </div>
-      `;
-      elPodium.appendChild(div);
-    });
-  }
 
   function render(){
     const list = applyFilterSort(rows);
@@ -413,7 +386,6 @@
   renderPodium(rows);            // update podium sesuai mode sort
   render();                      // update tabel
 });
-  elSortBy.addEventListener("change", render);
 
   load();
   setInterval(load, 60000);
