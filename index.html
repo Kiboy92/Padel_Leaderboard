@@ -1416,26 +1416,6 @@ async function loadAll(){
   }
 }
 
-
-  // Matches (tabs 2 & 3) should not break tab1
-  try{
-    await loadMatches();
-    if (MATCHES_CSV_URL){
-      renderMatchDayTrends();
-      renderPlayerSelect();
-      renderPlayerTrends();
-    } else {
-      renderMatchDayTrends();
-      renderPlayerTrends();
-    }
-  } catch (e){
-    console.error("Matches load failed:", e);
-    // still try to render empty states
-    renderMatchDayTrends();
-    renderPlayerTrends();
-  }
-}
-
   loadAll();
   setInterval(loadAll, 60000);
 </script>
