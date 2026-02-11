@@ -397,6 +397,10 @@ const cWinrateDay = document.getElementById("chartWinrateDay");
   // =========================
   // Utilities
   // =========================
+function setText(el, txt){
+  if (el) el.textContent = txt;
+}
+  
 function longestWinrateStreak(days, thresholdPct){
   // days = array hasil groupByDate: [{date, wins, losses, ...}]
   let best = 0, cur = 0;
@@ -815,26 +819,39 @@ function longestWinrateStreak(days, thresholdPct){
   // =========================
   // Tab 2: Match Day Trends
   // =========================
+function setText(el, txt){
+  if (el) el.textContent = txt;
+}
+
+function safeChart(canvas, labels, values, title, suffix=""){
+  if (!canvas) return;
+  drawLineChart(canvas, labels, values, title, suffix);
+}
+  
  function renderMatchDayTrends(){
   if (!MATCHES_CSV_URL){
-    elMatchesHint.textContent =
-      "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code.";
-    elMdCount.textContent = "0";
-    elTotalMatchesRange.textContent = "-";
-    elTotalPointsRange.textContent = "-";
-    elOverallWinrateRange.textContent = "-";
-    elWinrateStreak.textContent = "-";
-    drawLineChart(cPointsDay, [], [], "Total Points per Day");
-    drawLineChart(cPointsCum, [], [], "Cumulative Points");
-    drawLineChart(cMatchesDay, [], [], "Total Matches per Day");
-    drawLineChart(cWinrateDay, [], [], "Winrate per Day");
+    setText(elMatchesHint,
+      "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code."
+    );
+    setText(elMdCount, "0");
+    setText(elTotalMatchesRange, "-");
+    setText(elTotalPointsRange, "-");
+    setText(elOverallWinrateRange, "-");
+    setText(elWinrateStreak, "-");
+
+    safeChart(cPointsDay, [], [], "Total Points per Day");
+    safeChart(cPointsCum, [], [], "Cumulative Points");
+    safeChart(cMatchesDay, [], [], "Total Matches per Day");
+    safeChart(cWinrateDay, [], [], "Winrate per Day", "%");
     return;
   }
 
   const ranged = filterByRange(matchesRows, elTrendRange.value);
   const byDay = groupByDate(ranged);
 
-  elMdCount.textContent = String(byDay.length);
+  setText(elMdCount, String(byDay.length));
+}
+
 
   // totals range
   const totalPoints = ranged.reduce((s,r)=> s + (r.points||0), 0);
@@ -990,5 +1007,6 @@ const wr = played ? ((wins/played)*100).toFixed(1) + "%" : "0.0%";
 </script>
 </body>
 </html>
+
 
 
