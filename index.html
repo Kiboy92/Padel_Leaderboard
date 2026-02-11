@@ -1297,7 +1297,7 @@ function renderMatchDayTrends(){
 
 
 function renderPlayerSelect(){
-    const players = uniquePlayersFromMatches();
+    const players = uniquePlayersFromMatches(matchesRows);
     elPlayerSelect.innerHTML = "";
     if (!players.length){
       const opt = document.createElement("option");
