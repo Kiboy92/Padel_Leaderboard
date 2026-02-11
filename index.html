@@ -19,7 +19,6 @@
     }
     .wrap{max-width:1100px; margin:28px auto; padding:0 16px}
     .card{
-      position: relative;
       background: rgba(18,26,51,.86);
       border:1px solid var(--line);
       border-radius:18px;
@@ -79,7 +78,9 @@
       grid-template-columns: repeat(3, 1fr);
       margin-top:12px;
     }
-    @media (max-width: 760px){ .podium{grid-template-columns:1fr} }
+    @media (max-width: 760px){
+      .podium{grid-template-columns:1fr}
+    }
     .podiumCard{
       border:1px solid var(--line);
       border-radius:16px;
@@ -111,7 +112,7 @@
       100% { opacity:1; transform: translateY(0px)  scale(1); }
     }
 
-    /* Table wrapper */
+    /* Table wrapper: mobile spacing + right padding */
     .tableWrap{
       margin-top:12px;
       overflow-x:auto;
@@ -142,19 +143,17 @@
       grid-template-columns: 1fr 1fr;
       margin-top: 12px;
     }
-    @media (max-width: 860px){ .grid2{ grid-template-columns: 1fr; } }
-
+    @media (max-width: 860px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
     .miniCard{
-      border:1px solid rgba(255,255,255,.10);
+      border:1px solid var(--line);
       border-radius: 16px;
       padding: 12px;
-      background: linear-gradient(180deg, rgba(11,16,32,.62), rgba(11,16,32,.44));
-      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+      background: rgba(11,16,32,.55);
     }
     .miniTitle{ font-size: 13px; color: rgba(233,236,255,.82); }
-    .bigNum{ font-size: 28px; margin-top: 6px; font-weight: 750; letter-spacing:.2px; }
-    .miniMeta{ margin-top: 6px; }
-
+    .bigNum{ font-size: 26px; margin-top: 6px; font-weight: 700; letter-spacing:.2px; }
     canvas{
       width:100%;
       height: 240px;
@@ -164,24 +163,6 @@
       display:block;
     }
 
-    /* Tooltip for charts */
-    .tip{
-      position: absolute;
-      pointer-events: none;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(11,16,32,.92);
-      color: rgba(233,236,255,.95);
-      font-size: 12px;
-      box-shadow: 0 14px 30px rgba(0,0,0,.35);
-      transform: translate(-50%, -110%);
-      display:none;
-      max-width: 240px;
-      z-index: 20;
-    }
-    .tip b{font-size: 12px}
-
     /* Mobile polish */
     @media (max-width: 480px){
       .wrap{padding:0 12px}
@@ -189,12 +170,91 @@
       input,select{width: 100%;}
       .right{width:100%;}
     }
+  
+    /* =========================
+       BROADCAST HIGHLIGHTS
+       ========================= */
+    .highlightGrid{
+      display:grid;
+      gap:12px;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 12px;
+    }
+    @media (max-width: 980px){
+      .highlightGrid{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px){
+      .highlightGrid{ grid-template-columns: 1fr; }
+    }
+    .hiCard{
+      position:relative;
+      overflow:hidden;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(800px 240px at 15% 0%, rgba(159,176,255,.25), transparent 60%),
+        radial-gradient(600px 240px at 85% 30%, rgba(62,243,178,.18), transparent 62%),
+        linear-gradient(180deg, rgba(11,16,32,.72), rgba(11,16,32,.40));
+      box-shadow: 0 14px 34px rgba(0,0,0,.35);
+      padding:14px 14px 12px;
+    }
+    .hiCard::before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,.16), transparent 55%);
+      transform: rotate(12deg);
+      opacity:.55;
+      pointer-events:none;
+    }
+    .hiTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .hiIcon{
+      width:46px; height:46px;
+      display:grid; place-items:center;
+      border-radius:14px;
+      background: rgba(159,176,255,.15);
+      border: 1px solid rgba(159,176,255,.25);
+      font-size:22px;
+      flex:0 0 auto;
+    }
+    .hiLabel{
+      font-size:12px;
+      color: rgba(233,236,255,.72);
+      letter-spacing:.2px;
+    }
+    .hiValue{
+      margin-top:8px;
+      font-size:26px;
+      font-weight:800;
+      letter-spacing:.2px;
+      line-height:1.05;
+    }
+    .hiSub{
+      margin-top:6px;
+      font-size:12px;
+      color: rgba(233,236,255,.60);
+    }
+
+    /* Cinematic canvas base */
+    canvas{
+      background:
+        radial-gradient(900px 280px at 10% 0%, rgba(159,176,255,.10), transparent 60%),
+        radial-gradient(700px 240px at 85% 40%, rgba(62,243,178,.08), transparent 60%),
+        rgba(11,16,32,.40);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+    }
+
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="card" id="cardRoot">
+    <div class="card">
       <div class="toolbar">
         <div>
           <h1>Padel Leaderboard</h1>
@@ -206,8 +266,6 @@
         </div>
       </div>
 
-      <div class="tip" id="chartTip"></div>
-
       <!-- Tabs -->
       <div class="tabs">
         <button class="tabBtn active" data-tab="tab1">Tab 1 — Leaderboard</button>
@@ -215,7 +273,7 @@
         <button class="tabBtn" data-tab="tab3">Tab 3 — Trend Individual</button>
       </div>
 
-      <!-- TAB 1 -->
+      <!-- TAB 1: Leaderboard -->
       <section id="tab1" class="tabPanel active">
         <div class="toolbar" style="margin-top: 6px;">
           <div class="right" style="width:100%; justify-content:flex-end;">
@@ -251,14 +309,21 @@
         </div>
 
         <div class="muted" style="margin-top:10px">
-          Tab 2 & 3 pakai data “Matches” (rekap per match day). Pastikan sheet Matches sudah “Publish to web” sebagai CSV.
+          Tab 2 & 3 butuh data “Matches” (per match day). Kalau belum ada, tinggal publish sheet Matches jadi  & tempel URL-nya di code.
         </div>
       </section>
 
-      <!-- TAB 2 -->
+      <!-- TAB 2: Trend Match Day -->
       <section id="tab2" class="tabPanel">
         <div class="toolbar" style="margin-top: 6px;">
           <div class="right" style="width:100%; justify-content:flex-end;">
+            <select id="trendMonth" title="Month">
+              <option value="all">All months</option>
+              <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+              <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+            </select>
             <select id="trendRange">
               <option value="30">Last 30 days</option>
               <option value="60">Last 60 days</option>
@@ -268,63 +333,116 @@
             <span class="pill">Match days: <b id="mdCount">0</b></span>
           </div>
         </div>
+        
+          <div class="grid2">
+  <div class="miniCard">
+    <div class="miniTitle">Total Matches (range)</div>
+    <div class="bigNum" id="totalMatchesRange">-</div>
+    <div class="muted">Jumlah total played (akumulasi Win+Lose/Played) pada range.</div>
+  </div>
 
-        <div class="grid2">
-          <div class="miniCard">
-            <div class="miniTitle">Total Matches (range)</div>
-            <div class="bigNum" id="totalMatchesRange">-</div>
-            <div class="muted miniMeta">Jumlah total played (akumulasi Win+Lose/Played) pada range.</div>
+  <div class="miniCard">
+    <div class="miniTitle">Total Points (range)</div>
+    <div class="bigNum" id="totalPointsRange">-</div>
+    <div class="muted">Akumulasi points dari semua sesi di range.</div>
+  </div>
+
+  <div class="miniCard">
+    <div class="miniTitle">Overall Winrate (range)</div>
+    <div class="bigNum" id="overallWinrateRange">-</div>
+    <div class="muted">Total win / (total win + total lose).</div>
+  </div>
+
+  <div class="miniCard">
+    <div class="miniTitle">Winrate Streak ≥ <span id="streakThresholdLabel">60</span>%</div>
+    <div class="bigNum" id="winrateStreak">-</div>
+    <div class="muted">Match day berturut-turut (dalam range) dengan winrate ≥ threshold.</div>
+  </div>
+</div>
+
+        <div class="highlightGrid">
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Longest Winrate Streak (by day)</div>
+                <div class="hiValue" id="hiLongestStreak">-</div>
+                <div class="hiSub">Winrate day-streak ≥ <span id="streakThresholdLabel2">60</span>%</div>
+              </div>
+              <div class="hiIcon">🔥</div>
+            </div>
           </div>
 
-          <div class="miniCard">
-            <div class="miniTitle">Total Points (range)</div>
-            <div class="bigNum" id="totalPointsRange">-</div>
-            <div class="muted miniMeta">Akumulasi points dari semua sesi di range.</div>
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Most Improved</div>
+                <div class="hiValue" id="hiMostImproved">-</div>
+                <div class="hiSub">Δ points vs periode sebelumnya (range sama)</div>
+              </div>
+              <div class="hiIcon">📈</div>
+            </div>
           </div>
 
-          <div class="miniCard">
-            <div class="miniTitle">Overall Winrate (range)</div>
-            <div class="bigNum" id="overallWinrateRange">-</div>
-            <div class="muted miniMeta">Total win / (total win + total lose).</div>
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Most Active</div>
+                <div class="hiValue" id="hiMostActive">-</div>
+                <div class="hiSub">Total played tertinggi (range)</div>
+              </div>
+              <div class="hiIcon">🏆</div>
+            </div>
           </div>
 
-          <div class="miniCard">
-            <div class="miniTitle">Winrate Streak ≥ <span id="streakThresholdLabel">60</span>%</div>
-            <div class="bigNum" id="winrateStreak">-</div>
-            <div class="muted miniMeta">Match day berturut-turut (dalam range) dengan winrate ≥ threshold.</div>
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Best Match Day</div>
+                <div class="hiValue" id="hiBestDay">-</div>
+                <div class="hiSub">Tanggal dengan points tertinggi (range)</div>
+              </div>
+              <div class="hiIcon">⭐</div>
+            </div>
           </div>
         </div>
 
-        <div class="grid2">
-          <div>
-            <div class="muted" style="margin:6px 2px;">Total Points per Match Day</div>
-            <canvas id="chartPointsDay" width="900" height="260"></canvas>
-          </div>
-          <div>
-            <div class="muted" style="margin:6px 2px;">Cumulative Points (Growth)</div>
-            <canvas id="chartPointsCum" width="900" height="260"></canvas>
-          </div>
-        </div>
+      <div class="grid2">
+  <div>
+    <div class="muted" style="margin:6px 2px;">Total Points per Match Day</div>
+    <canvas id="chartPointsDay" width="900" height="260"></canvas>
+  </div>
+  <div>
+    <div class="muted" style="margin:6px 2px;">Cumulative Points (Growth)</div>
+    <canvas id="chartPointsCum" width="900" height="260"></canvas>
+  </div>
+</div>
 
-        <div class="grid2">
-          <div>
-            <div class="muted" style="margin:6px 2px;">Total Matches per Match Day</div>
-            <canvas id="chartMatchesDay" width="900" height="260"></canvas>
-          </div>
-          <div>
-            <div class="muted" style="margin:6px 2px;">Club Winrate Trend per Match Day</div>
-            <canvas id="chartWinrateDay" width="900" height="260"></canvas>
-          </div>
-        </div>
+<div class="grid2">
+  <div>
+    <div class="muted" style="margin:6px 2px;">Total Matches per Match Day</div>
+    <canvas id="chartMatchesDay" width="900" height="260"></canvas>
+  </div>
+  <div>
+    <div class="muted" style="margin:6px 2px;">Club Winrate Trend per Match Day</div>
+    <canvas id="chartWinrateDay" width="900" height="260"></canvas>
+  </div>
+</div>
 
         <div class="muted" style="margin-top:10px" id="matchesHint"></div>
       </section>
 
-      <!-- TAB 3 -->
+      <!-- TAB 3: Trend Individual -->
       <section id="tab3" class="tabPanel">
         <div class="toolbar" style="margin-top: 6px;">
           <div class="right" style="width:100%; justify-content:flex-end;">
             <select id="playerSelect"></select>
+            <select id="playerMonth" title="Month">
+              <option value="all">All months</option>
+              <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+              <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+            </select>
             <select id="playerRange">
               <option value="30">Last 30 days</option>
               <option value="60">Last 60 days</option>
@@ -338,14 +456,61 @@
           <div class="miniCard">
             <div class="miniTitle">Player Matches (range)</div>
             <div class="bigNum" id="pMatches">-</div>
-            <div class="muted miniMeta">Jumlah played player di range.</div>
+            <div class="muted">Jumlah match player di range.</div>
           </div>
           <div class="miniCard">
             <div class="miniTitle">Player Winrate (range)</div>
             <div class="bigNum" id="pWinrate">-</div>
-            <div class="muted miniMeta">Win / Played pada range.</div>
+            <div class="muted">Win / Played pada range.</div>
           </div>
         </div>
+
+        <div class="highlightGrid">
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Player Best Day</div>
+                <div class="hiValue" id="pHiBestDay">-</div>
+                <div class="hiSub">Best points day untuk player ini</div>
+              </div>
+              <div class="hiIcon">⭐</div>
+            </div>
+          </div>
+
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Player Longest Streak</div>
+                <div class="hiValue" id="pHiStreak">-</div>
+                <div class="hiSub">Winrate day-streak ≥ 60%</div>
+              </div>
+              <div class="hiIcon">🔥</div>
+            </div>
+          </div>
+
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Avg Points / Day</div>
+                <div class="hiValue" id="pHiAvgPts">-</div>
+                <div class="hiSub">Rata-rata points per match day</div>
+              </div>
+              <div class="hiIcon">🎯</div>
+            </div>
+          </div>
+
+          <div class="hiCard">
+            <div class="hiTop">
+              <div>
+                <div class="hiLabel">Total Played</div>
+                <div class="hiValue" id="pHiPlayed">-</div>
+                <div class="hiSub">Total played pada filter aktif</div>
+              </div>
+              <div class="hiIcon">🧱</div>
+            </div>
+          </div>
+        </div>
+
 
         <div class="grid2">
           <div>
@@ -365,24 +530,33 @@
   </div>
 
 <script>
-  // =========================
-  // CSV URLs
+  /* =========================
+  NOTES (PLEASE READ):
+  1) Semua ID yang dipakai JS harus exist di HTML. Gunakan safeSet agar tidak crash.
+  2) Highlights & charts mengikuti filter yang dipilih:
+     - trendRange: Last 30/60/365/All
+     - trendMonth/playerMonth: January–December atau All months
+  3) Tab 1 tetap render walau Matches gagal load → loadAll() dipisah try/catch.
+  ========================= */
+
+// =========================
+  // 1) LEADERBOARD CSV (kamu sudah punya)
   // =========================
   const LEADERBOARD_CSV_URL =
     "https://docs.google.com/spreadsheets/d/e/2PACX-1vQa_3k4XRT_CetrvxU0E2wlGlsis3bbt9mRFk85jfLb8w4FsGBxadPNPGQRdjkCU9_4Wywmu1wr2f9P/pub?gid=0&single=true&output=csv";
 
-  const MATCHES_CSV_URL =
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvKFiHbg-Ax_1oxD1fm_FSPZLhk1KgYSF7ndVVccl3TTv-IH7y7vQFd6ezx0QqUJ9iAyFqyCkVPJAB/pub?gid=0&single=true&output=csv";
+  // =========================
+  // 2) MATCHES CSV (buat trend)
+  // Isi jika kamu sudah publish sheet Matches → output=csv
+  // Contoh format kolom: Date, Player, Result(W/L), Points
+  // =========================
+  const MATCHES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTvKFiHbg-Ax_1oxD1fm_FSPZLhk1KgYSF7ndVVccl3TTv-IH7y7vQFd6ezx0QqUJ9iAyFqyCkVPJAB/pub?gid=0&single=true&output=csv"; // <-- tempel di sini nanti
 
   let leaderboardRows = [];
-  let matchesRows = []; // {date, session, player, wins, losses, played, points}
+  let matchesRows = []; // {date: 'YYYY-MM-DD', player:'', result:'W/L', points:number}
 
-  // =========================
-  // Elements
-  // =========================
+  // elements
   const elLastUpdate = document.getElementById("lastUpdate");
-  const elTip = document.getElementById("chartTip");
-  const cardRoot = document.getElementById("cardRoot");
 
   // tab 1
   const elTbody = document.getElementById("tbody");
@@ -393,38 +567,79 @@
 
   // tab 2
   const elTrendRange = document.getElementById("trendRange");
+  const elTrendMonth = document.getElementById("trendMonth");
   const elMdCount = document.getElementById("mdCount");
   const elTotalMatchesRange = document.getElementById("totalMatchesRange");
   const elTotalPointsRange = document.getElementById("totalPointsRange");
-  const elOverallWinrateRange = document.getElementById("overallWinrateRange");
-  const elWinrateStreak = document.getElementById("winrateStreak");
-  const elStreakThresholdLabel = document.getElementById("streakThresholdLabel");
   const elMatchesHint = document.getElementById("matchesHint");
-
   const cPointsDay = document.getElementById("chartPointsDay");
   const cPointsCum = document.getElementById("chartPointsCum");
-  const cMatchesDay = document.getElementById("chartMatchesDay");
-  const cWinrateDay = document.getElementById("chartWinrateDay");
+  const elOverallWinrateRange = document.getElementById("overallWinrateRange");
+const elWinrateStreak = document.getElementById("winrateStreak");
+const elStreakThresholdLabel = document.getElementById("streakThresholdLabel");
+  const elStreakThresholdLabel2 = document.getElementById("streakThresholdLabel2");
+const cMatchesDay = document.getElementById("chartMatchesDay");
+const cWinrateDay = document.getElementById("chartWinrateDay");
+
+  const elHiLongestStreak = document.getElementById("hiLongestStreak");
+  const elHiMostImproved = document.getElementById("hiMostImproved");
+  const elHiMostActive = document.getElementById("hiMostActive");
+  const elHiBestDay = document.getElementById("hiBestDay");
+
+
 
   // tab 3
   const elPlayerSelect = document.getElementById("playerSelect");
   const elPlayerRange = document.getElementById("playerRange");
+  const elPlayerMonth = document.getElementById("playerMonth");
   const elPMatches = document.getElementById("pMatches");
   const elPWinrate = document.getElementById("pWinrate");
   const elPlayerHint = document.getElementById("playerHint");
   const cPlayerPts = document.getElementById("chartPlayerPts");
   const cPlayerCum = document.getElementById("chartPlayerCum");
 
+  const elPHiBestDay = document.getElementById("pHiBestDay");
+  const elPHiStreak = document.getElementById("pHiStreak");
+  const elPHiAvgPts = document.getElementById("pHiAvgPts");
+  const elPHiPlayed = document.getElementById("pHiPlayed");
+
   // =========================
   // Utilities
   // =========================
-  function setText(el, txt){ if (el) el.textContent = txt; }
+  function safeSet(el, val){
+    if (el) el.textContent = val;
+  }
 
+  function applyMonthFilter(records, monthValue){
+    if (!monthValue || monthValue === "all") return records;
+    const m = Number(monthValue);
+    return records.filter(r => Number(String(r.date).slice(5,7)) === m);
+  }
+
+  
+function longestWinrateStreak(days, thresholdPct){
+  // days = array hasil groupByDate: [{date, wins, losses, ...}]
+  let best = 0, cur = 0;
+
+  for (const d of days){
+    const played = (d.wins || 0) + (d.losses || 0);
+    const wr = played ? (d.wins / played) * 100 : 0;
+
+    if (wr >= thresholdPct){
+      cur += 1;
+      if (cur > best) best = cur;
+    } else {
+      cur = 0;
+    }
+  }
+  return best;
+}
+
+  
   function toNum(v){
     const n = Number(String(v ?? "").trim());
     return Number.isFinite(n) ? n : 0;
   }
-
   function escapeHtml(str){
     return String(str ?? "")
       .replaceAll("&","&amp;")
@@ -433,49 +648,12 @@
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
   }
-
-  function normalizeHeaders(h){ return String(h || "").trim().toLowerCase(); }
-
+  function normalizeHeaders(h){
+    return String(h || "").trim().toLowerCase();
+  }
   function winrate(p){
     if (!p.played) return 0;
     return (p.win / p.played) * 100;
-  }
-
-  function normalizeDate(s){
-    const t = String(s || "").trim();
-    if (!t) return "";
-
-    // YYYY-MM-DD or YYYY/MM/DD
-    const iso = t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
-    if (iso){
-      const y = iso[1];
-      const m = String(iso[2]).padStart(2,"0");
-      const d = String(iso[3]).padStart(2,"0");
-      return `${y}-${m}-${d}`;
-    }
-
-    // DD/MM/YYYY
-    const dmy = t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
-    if (dmy){
-      const d = String(dmy[1]).padStart(2,"0");
-      const m = String(dmy[2]).padStart(2,"0");
-      const y = dmy[3];
-      return `${y}-${m}-${d}`;
-    }
-
-    const dt = new Date(t);
-    if (!isNaN(dt.getTime())){
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth()+1).padStart(2,"0");
-      const d = String(dt.getDate()).padStart(2,"0");
-      return `${y}-${m}-${d}`;
-    }
-    return "";
-  }
-
-  function nowHHMM(){
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   }
 
   // CSV parser (supports quoted values)
@@ -509,7 +687,7 @@
   }
 
   // =========================
-  // Mapping
+  // Leaderboard mapping (robust)
   // =========================
   function toLeaderboardPlayers(parsed){
     const header = (parsed[0] || []).map(h => normalizeHeaders(h));
@@ -547,42 +725,91 @@
     })).filter(p => p.name);
   }
 
+  // =========================
+  // Matches mapping (Date/Player/Result/Points)
+  // =========================
   function toMatches(parsed){
-    const header = (parsed[0] || []).map(h => normalizeHeaders(h));
+  const header = (parsed[0] || []).map(h => normalizeHeaders(h));
 
-    function findIdx(candidates){
-      for (const c of candidates){
-        const i = header.indexOf(c);
-        if (i !== -1) return i;
-      }
-      return -1;
+  function findIdx(candidates){
+    for (const c of candidates){
+      const i = header.indexOf(c);
+      if (i !== -1) return i;
+    }
+    return -1;
+  }
+
+  const iDate   = findIdx(["date","tanggal"]);
+  const iSess   = findIdx(["session/court","session","court","venue","lapangan"]);
+  const iPlayer = findIdx(["player","name","nama","pemain"]);
+  const iWin    = findIdx(["win","menang","w"]);
+  const iLose   = findIdx(["lose","loss","kalah","l"]);
+  const iPoints = findIdx(["points","poin","point","skor","score"]);
+  const iPlayed = findIdx(["played","main","games","match"]);
+
+  if (iDate === -1 || iPlayer === -1) return [];
+
+  return parsed.slice(1).map(cols => {
+    const rawDate = (cols[iDate] || "").trim();
+    const date = normalizeDate(rawDate);
+
+    const player = (cols[iPlayer] || "").trim();
+    const session = iSess !== -1 ? (cols[iSess] || "").trim() : "";
+
+    const wins = iWin !== -1 ? toNum(cols[iWin]) : 0;
+    const losses = iLose !== -1 ? toNum(cols[iLose]) : 0;
+
+    // played kadang ada di CSV, tapi kalau nggak ada / kosong, kita hitung dari win+lose
+    const playedFromCol = iPlayed !== -1 ? toNum(cols[iPlayed]) : 0;
+    const played = playedFromCol || (wins + losses);
+
+    const points = iPoints !== -1 ? toNum(cols[iPoints]) : 0;
+
+    return { date, session, player, wins, losses, played, points };
+  }).filter(r => r.date && r.player);
+}
+
+
+  function normalizeDate(s){
+    // supports: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY, etc. Best effort.
+    const t = String(s || "").trim();
+    if (!t) return "";
+
+    // already ISO-like
+    const iso = t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (iso){
+      const y = iso[1];
+      const m = String(iso[2]).padStart(2,"0");
+      const d = String(iso[3]).padStart(2,"0");
+      return `${y}-${m}-${d}`;
     }
 
-    const iDate   = findIdx(["date","tanggal"]);
-    const iSess   = findIdx(["session/court","session","court","venue","lapangan"]);
-    const iPlayer = findIdx(["player","name","nama","pemain"]);
-    const iWin    = findIdx(["win","menang","w"]);
-    const iLose   = findIdx(["lose","loss","kalah","l"]);
-    const iPoints = findIdx(["points","poin","point","skor","score"]);
-    const iPlayed = findIdx(["played","main","games","match"]);
+    // DD/MM/YYYY
+    const dmy = t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (dmy){
+      const d = String(dmy[1]).padStart(2,"0");
+      const m = String(dmy[2]).padStart(2,"0");
+      const y = dmy[3];
+      return `${y}-${m}-${d}`;
+    }
 
-    if (iDate === -1 || iPlayer === -1) return [];
+    // fallback: try Date parse
+    const dt = new Date(t);
+    if (!isNaN(dt.getTime())){
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,"0");
+      const d = String(dt.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
 
-    return parsed.slice(1).map(cols => {
-      const date = normalizeDate((cols[iDate] || "").trim());
-      const player = (cols[iPlayer] || "").trim();
-      const session = iSess !== -1 ? (cols[iSess] || "").trim() : "";
+    return "";
+  }
 
-      const wins = iWin !== -1 ? toNum(cols[iWin]) : 0;
-      const losses = iLose !== -1 ? toNum(cols[iLose]) : 0;
-
-      const playedFromCol = iPlayed !== -1 ? toNum(cols[iPlayed]) : 0;
-      const played = playedFromCol || (wins + losses);
-
-      const points = iPoints !== -1 ? toNum(cols[iPoints]) : 0;
-
-      return { date, session, player, wins, losses, played, points };
-    }).filter(r => r.date && r.player);
+  function nowHHMM(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${hh}:${mm}`;
   }
 
   // =========================
@@ -595,13 +822,14 @@
       btn.classList.add("active");
       document.getElementById(btn.dataset.tab).classList.add("active");
 
+      // refresh charts when user opens tab
       if (btn.dataset.tab === "tab2") renderMatchDayTrends();
       if (btn.dataset.tab === "tab3") renderPlayerTrends();
     });
   });
 
   // =========================
-  // Tab 1 render
+  // Tab 1: Sorting + rendering
   // =========================
   function applyFilterSort(list){
     const q = elSearch.value.trim().toLowerCase();
@@ -620,11 +848,13 @@
       if (mode === "name_asc") return a.name.localeCompare(b.name);
       return 0;
     });
+
     return out;
   }
 
   function renderPodium(allRows){
     const mode = elSortBy.value;
+
     const sorted = [...allRows].sort((a,b)=>{
       if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
       if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
@@ -642,7 +872,7 @@
     const medals = ["🥇","🥈","🥉"];
     elPodium.innerHTML = "";
 
-    if (!top.length){
+    if (top.length === 0){
       elPodium.innerHTML = `<div class="muted">Belum ada data untuk podium.</div>`;
       return;
     }
@@ -665,10 +895,10 @@
 
   function renderLeaderboard(){
     const list = applyFilterSort(leaderboardRows);
-    setText(elCount, String(leaderboardRows.length));
+    elCount.textContent = String(leaderboardRows.length);
     elTbody.innerHTML = "";
 
-    if (!leaderboardRows.length){
+    if (leaderboardRows.length === 0){
       elTbody.innerHTML = `<tr><td colspan="7" class="muted">Data kosong / belum kebaca dari CSV.</td></tr>`;
       return;
     }
@@ -689,7 +919,7 @@
     });
   }
 
-  elSearch.addEventListener("input", renderLeaderboard);
+  elSearch.addEventListener("input", () => renderLeaderboard());
   elSortBy.addEventListener("change", () => {
     elPodium.innerHTML = "";
     renderPodium(leaderboardRows);
@@ -697,7 +927,7 @@
   });
 
   // =========================
-  // Trend helpers
+  // Trends helpers (Match Day aggregation)
   // =========================
   function filterByRange(records, daysOrAll){
     if (daysOrAll === "all") return [...records];
@@ -712,53 +942,49 @@
   }
 
   function groupByDate(records){
-    const map = new Map();
-    records.forEach(r => {
-      if (!map.has(r.date)) map.set(r.date, {date:r.date, matches:0, points:0, wins:0, losses:0});
-      const g = map.get(r.date);
-      g.matches += (r.played || (r.wins||0)+(r.losses||0));
-      g.points  += (r.points || 0);
-      g.wins    += (r.wins || 0);
-      g.losses  += (r.losses || 0);
-    });
-    return Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
-  }
+  const map = new Map();
 
-  function longestWinrateStreak(days, thresholdPct){
-    let best = 0, cur = 0;
-    for (const d of days){
-      const played = (d.wins||0) + (d.losses||0);
-      const wr = played ? (d.wins/played)*100 : 0;
-      if (wr >= thresholdPct){ cur++; best = Math.max(best, cur); }
-      else cur = 0;
-    }
-    return best;
-  }
+  records.forEach(r => {
+    if (!map.has(r.date)) map.set(r.date, {date:r.date, matches:0, points:0, wins:0, losses:0});
+    const g = map.get(r.date);
+
+    g.matches += (r.played || (r.wins||0) + (r.losses||0));
+    g.points  += (r.points || 0);
+    g.wins    += (r.wins || 0);
+    g.losses  += (r.losses || 0);
+  });
+
+  return Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
+}
 
   // =========================
-  // Charts (with tooltip)
+  // Tiny canvas chart (line)
   // =========================
-  const chartState = new WeakMap(); // canvas -> {labels, values, title, suffix}
-
   function drawLineChart(canvas, labels, values, title, suffix=""){
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const w = canvas.width, h = canvas.height;
+    const w = canvas.width;
+    const h = canvas.height;
 
+    // store data for hover tooltip
+    canvas._chartData = { labels, values, suffix, title };
+
+    // clear
     ctx.clearRect(0,0,w,h);
 
+    // padding
     const padL = 56, padR = 18, padT = 18, padB = 34;
     const plotW = w - padL - padR;
     const plotH = h - padT - padB;
 
-    ctx.fillStyle = "rgba(233,236,255,.78)";
+    // title
+    ctx.fillStyle = "rgba(233,236,255,.85)";
     ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
     ctx.fillText(title || "", padL, 14);
 
-    if (!values.length){
+    if (!values || values.length === 0){
       ctx.fillStyle = "rgba(233,236,255,.6)";
       ctx.fillText("No data", padL, padT + 18);
-      chartState.set(canvas, {labels, values, title, suffix});
       return;
     }
 
@@ -766,7 +992,7 @@
     const maxV = Math.max(...values);
     const span = (maxV - minV) || 1;
 
-    // grid + y ticks
+    // grid + y ticks (5 lines)
     ctx.strokeStyle = "rgba(255,255,255,.07)";
     ctx.lineWidth = 1;
     ctx.fillStyle = "rgba(233,236,255,.55)";
@@ -774,19 +1000,20 @@
 
     for (let i=0;i<=4;i++){
       const y = padT + (plotH * i/4);
-      const val = (maxV - (span * i/4));
+      const val = maxV - (span * i/4);
       ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
-      ctx.fillText(val.toFixed(1) + suffix, 8, y+4);
+      ctx.fillText(`${val.toFixed(1)}${suffix}`, 10, y+4);
     }
 
     // line
-    ctx.strokeStyle = "rgba(159,176,255,.85)";
+    ctx.strokeStyle = "rgba(159,176,255,.90)";
     ctx.lineWidth = 2;
     ctx.beginPath();
     values.forEach((v, i)=>{
       const x = padL + (plotW * (values.length===1 ? 0 : i/(values.length-1)));
       const y = padT + plotH - ((v - minV)/span) * plotH;
-      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      if (i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
     });
     ctx.stroke();
 
@@ -811,132 +1038,251 @@
     const lastVal = values[values.length-1];
     ctx.fillStyle = "rgba(233,236,255,.85)";
     ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Last: " + lastVal.toFixed(1) + suffix, padL+plotW-120, 14);
+    ctx.fillText(`Last: ${lastVal.toFixed(1)}${suffix}`, padL+plotW-150, 14);
 
-    chartState.set(canvas, {labels, values, title, suffix, padL, padT, plotW, plotH, minV, span});
-  }
+    // tooltip overlay if active
+    if (canvas._hoverIndex != null){
+      const i = canvas._hoverIndex;
+      const v = values[i];
+      const x = padL + (plotW * (values.length===1 ? 0 : i/(values.length-1)));
+      const y = padT + plotH - ((v - minV)/span) * plotH;
 
-  function showTip(x, y, html){
-    elTip.innerHTML = html;
-    elTip.style.left = x + "px";
-    elTip.style.top = y + "px";
-    elTip.style.display = "block";
-  }
-  function hideTip(){ elTip.style.display = "none"; }
+      // crosshair
+      ctx.strokeStyle = "rgba(255,255,255,.18)";
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
 
-  function attachTooltip(canvas){
-    if (!canvas) return;
-    canvas.addEventListener("mouseleave", hideTip);
-    canvas.addEventListener("mousemove", (e)=>{
-      const st = chartState.get(canvas);
-      if (!st || !st.values || st.values.length === 0) return hideTip();
+      // tooltip box
+      const label = labels[i] || "";
+      const msg = `${label} • ${v.toFixed(1)}${suffix}`;
+      ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      const tw = ctx.measureText(msg).width;
+      const bx = Math.min(padL+plotW- (tw+18), Math.max(padL, x - tw/2 - 9));
+      const by = Math.max(padT+6, y - 34);
 
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      ctx.fillStyle = "rgba(11,16,32,.78)";
+      ctx.strokeStyle = "rgba(255,255,255,.14)";
+      ctx.lineWidth = 1;
+      roundRect(ctx, bx, by, tw+18, 26, 10, true, true);
 
-      // map to nearest index
-      const padL = st.padL ?? 56;
-      const padT = st.padT ?? 18;
-      const plotW = st.plotW ?? (canvas.width - 56 - 18);
-      const plotH = st.plotH ?? (canvas.height - 18 - 34);
-
-      const px = (mx / rect.width) * canvas.width;
-      const py = (my / rect.height) * canvas.height;
-
-      if (px < padL || px > padL + plotW || py < padT || py > padT + plotH) {
-        // still allow showing tip within plot only
-        return hideTip();
-      }
-
-      const n = st.values.length;
-      const t = (n===1) ? 0 : (px - padL) / plotW;
-      const idx = Math.min(n-1, Math.max(0, Math.round(t * (n-1))));
-
-      const label = st.labels[idx] ?? "";
-      const val = st.values[idx];
-      const suffix = st.suffix ?? "";
-
-      const cardRect = cardRoot.getBoundingClientRect();
-      const absX = e.clientX - cardRect.left;
-      const absY = e.clientY - cardRect.top;
-
-      showTip(absX, absY, `<div><b>${escapeHtml(label)}</b></div><div>${escapeHtml(st.title || "")}: <b>${Number(val).toFixed(1)}${escapeHtml(suffix)}</b></div>`);
-    });
-  }
-
-  // attach once
-  [cPointsDay, cPointsCum, cMatchesDay, cWinrateDay, cPlayerPts, cPlayerCum].forEach(attachTooltip);
-
-  // =========================
-  // Tab 2 render
-  // =========================
-  function renderMatchDayTrends(){
-    if (!MATCHES_CSV_URL){
-      setText(elMatchesHint, "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV lalu tempel URL-nya di const MATCHES_CSV_URL.");
-      setText(elMdCount, "0");
-      setText(elTotalMatchesRange, "-");
-      setText(elTotalPointsRange, "-");
-      setText(elOverallWinrateRange, "-");
-      setText(elWinrateStreak, "-");
-      drawLineChart(cPointsDay, [], [], "Total Points per Match Day");
-      drawLineChart(cPointsCum, [], [], "Cumulative Points (Growth)");
-      drawLineChart(cMatchesDay, [], [], "Total Matches per Match Day");
-      drawLineChart(cWinrateDay, [], [], "Club Winrate Trend per Match Day", "%");
-      return;
+      ctx.fillStyle = "rgba(233,236,255,.92)";
+      ctx.fillText(msg, bx+9, by+17);
     }
+  }
 
-    const ranged = filterByRange(matchesRows, elTrendRange.value);
-    const byDay = groupByDate(ranged);
+  function roundRect(ctx, x, y, w, h, r, fill, stroke){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
 
-    setText(elMdCount, String(byDay.length));
+  function enableChartHover(canvas){
+    if (!canvas || canvas._hoverEnabled) return;
+    canvas._hoverEnabled = true;
+    canvas.addEventListener("mousemove", (e)=>{
+      const data = canvas._chartData;
+      if (!data || !data.values || data.values.length === 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
 
-    const totalPoints = ranged.reduce((s,r)=> s + (r.points||0), 0);
-    const totalWins   = ranged.reduce((s,r)=> s + (r.wins||0), 0);
-    const totalLosses = ranged.reduce((s,r)=> s + (r.losses||0), 0);
-    const totalPlayed = totalWins + totalLosses;
+      const padL = 56, padR = 18;
+      const plotW = canvas.width - padL - padR;
 
-    setText(elTotalPointsRange, String(totalPoints));
-    setText(elTotalMatchesRange, String(totalPlayed));
-
-    const overallWR = totalPlayed ? ((totalWins/totalPlayed)*100).toFixed(1) + "%" : "0.0%";
-    setText(elOverallWinrateRange, overallWR);
-
-    const THRESHOLD = 60;
-    setText(elStreakThresholdLabel, String(THRESHOLD));
-    setText(elWinrateStreak, String(longestWinrateStreak(byDay, THRESHOLD)) + " days");
-
-    const labels = byDay.map(d => d.date);
-    const matchesDay = byDay.map(d => d.matches);
-    const pointsDay  = byDay.map(d => d.points);
-
-    let runPts = 0;
-    const pointsCum = pointsDay.map(v => (runPts += v));
-
-    const winrateDay = byDay.map(d => {
-      const played = (d.wins||0) + (d.losses||0);
-      return played ? Number(((d.wins/played)*100).toFixed(1)) : 0;
+      const n = data.values.length;
+      const t = (x - padL) / plotW;
+      const i = Math.max(0, Math.min(n-1, Math.round(t*(n-1))));
+      canvas._hoverIndex = i;
+      drawLineChart(canvas, data.labels, data.values, data.title, data.suffix);
     });
-
-    drawLineChart(cPointsDay, labels, pointsDay, "Total Points per Match Day");
-    drawLineChart(cPointsCum, labels, pointsCum, "Cumulative Points (Growth)");
-    drawLineChart(cMatchesDay, labels, matchesDay, "Total Matches (Played) per Match Day");
-    drawLineChart(cWinrateDay, labels, winrateDay, "Club Winrate Trend per Match Day", "%");
-
-    setText(elMatchesHint, "");
+    canvas.addEventListener("mouseleave", ()=>{
+      const data = canvas._chartData;
+      canvas._hoverIndex = null;
+      if (data) drawLineChart(canvas, data.labels, data.values, data.title, data.suffix);
+    });
   }
 
-  elTrendRange.addEventListener("change", renderMatchDayTrends);
 
-  // =========================
-  // Tab 3 render
-  // =========================
-  function uniquePlayersFromMatches(){
-    const set = new Set(matchesRows.map(r => r.player).filter(Boolean));
-    return Array.from(set).sort((a,b)=> a.localeCompare(b));
+function safeChart(canvas, labels, values, title, suffix=""){
+  if (!canvas) return;
+  drawLineChart(canvas, labels, values, title, suffix);
+  enableChartHover(canvas);
+}
+  
+ function bestMatchDay(byDay){
+  if (!byDay.length) return "-";
+  let best = byDay[0];
+  for (const d of byDay){ if (d.points > best.points) best = d; }
+  return `${best.date} (${best.points} pts)`;
+}
+
+function mostActivePlayer(records){
+  const map = new Map();
+  records.forEach(r=>{
+    const played = r.played || ((r.wins||0)+(r.losses||0));
+    map.set(r.player, (map.get(r.player)||0) + played);
+  });
+  let bestP="", bestV=-1;
+  for (const [p,v] of map.entries()) if (v>bestV){ bestV=v; bestP=p; }
+  return bestP ? `${bestP} (${bestV})` : "-";
+}
+
+function totalPointsByPlayer(records){
+  const map = new Map();
+  records.forEach(r=> map.set(r.player, (map.get(r.player)||0) + (r.points||0)));
+  return map;
+}
+
+function mostImproved(current, previous){
+  if (!previous.length) return "-";
+  const cur = totalPointsByPlayer(current);
+  const prev = totalPointsByPlayer(previous);
+  const players = new Set([...cur.keys(), ...prev.keys()]);
+  let bestP="", bestDelta=-Infinity;
+  for (const p of players){
+    const d = (cur.get(p)||0) - (prev.get(p)||0);
+    if (d>bestDelta){ bestDelta=d; bestP=p; }
+  }
+  if (!bestP) return "-";
+  const sign = bestDelta>=0 ? "+" : "";
+  return `${bestP} (${sign}${bestDelta} pts)`;
+}
+
+function longestWinrateStreak(days, thresholdPct){
+  let best=0, cur=0;
+  for (const d of days){
+    const played = (d.wins||0) + (d.losses||0);
+    const wr = played ? (d.wins/played)*100 : 0;
+    if (wr >= thresholdPct){ cur++; best = Math.max(best, cur); }
+    else cur = 0;
+  }
+  return best;
+}
+
+function longestStreakByPlayer(records, threshold){
+  const byPlayer = new Map();
+  records.forEach(r=>{
+    if (!byPlayer.has(r.player)) byPlayer.set(r.player, []);
+    byPlayer.get(r.player).push(r);
+  });
+  let bestP="", bestS=0;
+  for (const [p,recs] of byPlayer.entries()){
+    const map = new Map();
+    recs.forEach(rr=>{
+      if (!map.has(rr.date)) map.set(rr.date, {wins:0,losses:0,points:0});
+      const g = map.get(rr.date);
+      g.wins += (rr.wins||0);
+      g.losses += (rr.losses||0);
+    });
+    const days = Array.from(map.entries())
+      .sort((a,b)=>a[0].localeCompare(b[0]))
+      .map(([date,v])=>({date, wins:v.wins, losses:v.losses}));
+    const s = longestWinrateStreak(days, threshold);
+    if (s>bestS){ bestS=s; bestP=p; }
+  }
+  return bestP ? `${bestP} (${bestS} days)` : "-";
+}
+
+function renderMatchDayTrends(){
+  const THRESHOLD = 60;
+  safeSet(elStreakThresholdLabel, String(THRESHOLD));
+  safeSet(elStreakThresholdLabel2, String(THRESHOLD));
+
+  if (!MATCHES_CSV_URL){
+    safeSet(elMatchesHint,
+      "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV (output=csv), lalu tempel URL-nya ke const MATCHES_CSV_URL."
+    );
+    safeSet(elMdCount, "0");
+    safeSet(elTotalMatchesRange, "-");
+    safeSet(elTotalPointsRange, "-");
+    safeSet(elOverallWinrateRange, "-");
+    safeSet(elWinrateStreak, "-");
+
+    safeSet(elHiLongestStreak, "-");
+    safeSet(elHiMostImproved, "-");
+    safeSet(elHiMostActive, "-");
+    safeSet(elHiBestDay, "-");
+
+    safeChart(cPointsDay, [], [], "Total Points per Match Day");
+    safeChart(cPointsCum, [], [], "Cumulative Points (Growth)");
+    safeChart(cMatchesDay, [], [], "Total Matches per Match Day");
+    safeChart(cWinrateDay, [], [], "Club Winrate Trend per Match Day", "%");
+    return;
   }
 
-  function renderPlayerSelect(){
+  // Filter: range + month
+  let ranged = filterByRange(matchesRows, elTrendRange.value);
+  ranged = applyMonthFilter(ranged, elTrendMonth ? elTrendMonth.value : "all");
+
+  const byDay = groupByDate(ranged);
+  safeSet(elMdCount, String(byDay.length));
+  safeSet(elMatchesHint, byDay.length ? "" : "Tidak ada data pada filter ini.");
+
+  // KPI totals
+  const totalMatches = ranged.reduce((s,r)=> s + (r.played || ((r.wins||0)+(r.losses||0))), 0);
+  const totalPoints  = ranged.reduce((s,r)=> s + (r.points||0), 0);
+  const totalWins    = ranged.reduce((s,r)=> s + (r.wins||0), 0);
+  const totalLosses  = ranged.reduce((s,r)=> s + (r.losses||0), 0);
+  const playedWL     = totalWins + totalLosses;
+  const overallWR    = playedWL ? ((totalWins/playedWL)*100).toFixed(1) + "%" : "0.0%";
+
+  safeSet(elTotalMatchesRange, String(totalMatches));
+  safeSet(elTotalPointsRange, String(totalPoints));
+  safeSet(elOverallWinrateRange, overallWR);
+
+  // Streak: consecutive match days with winrate >= threshold
+  const streak = longestWinrateStreak(byDay, THRESHOLD);
+  safeSet(elWinrateStreak, String(streak) + " days");
+
+  // Highlights (club-wide)
+  safeSet(elHiBestDay, bestMatchDay(byDay));
+  safeSet(elHiMostActive, mostActivePlayer(ranged));
+  safeSet(elHiLongestStreak, longestStreakByPlayer(ranged, THRESHOLD));
+
+  // Most improved = current period vs previous period (same range length)
+  if (elTrendRange.value !== "all"){
+    const days = Number(elTrendRange.value);
+    const now = new Date();
+    const start = new Date(); start.setDate(now.getDate() - days);
+    const prevStart = new Date(); prevStart.setDate(now.getDate() - (2*days));
+
+    let prev = matchesRows.filter(r=>{
+      const d = new Date(r.date + "T00:00:00");
+      return d >= prevStart && d < start;
+    });
+    prev = applyMonthFilter(prev, elTrendMonth ? elTrendMonth.value : "all");
+
+    safeSet(elHiMostImproved, mostImproved(ranged, prev));
+  } else {
+    safeSet(elHiMostImproved, "-");
+  }
+
+  // Charts
+  const labels = byDay.map(d => d.date);
+  const ptsDay = byDay.map(d => d.points);
+  const matchesDay = byDay.map(d => d.matches);
+  const winrateDay = byDay.map(d => {
+    const p = (d.wins||0) + (d.losses||0);
+    return p ? (d.wins/p)*100 : 0;
+  });
+
+  // cumulative points
+  let acc = 0;
+  const ptsCum = ptsDay.map(v => (acc += v));
+
+  safeChart(cPointsDay, labels, ptsDay, "Total Points per Match Day");
+  safeChart(cPointsCum, labels, ptsCum, "Cumulative Points (Growth)");
+  safeChart(cMatchesDay, labels, matchesDay, "Total Matches per Match Day");
+  safeChart(cWinrateDay, labels, winrateDay, "Club Winrate Trend per Match Day", "%");
+}
+
+
+function renderPlayerSelect(){
     const players = uniquePlayersFromMatches();
     elPlayerSelect.innerHTML = "";
     if (!players.length){
@@ -955,51 +1301,66 @@
   }
 
   function renderPlayerTrends(){
-    if (!MATCHES_CSV_URL){
-      setText(elPlayerHint, "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV lalu tempel URL-nya di const MATCHES_CSV_URL.");
-      setText(elPMatches, "-");
-      setText(elPWinrate, "-");
-      drawLineChart(cPlayerPts, [], [], "Player Points per Match Day");
-      drawLineChart(cPlayerCum, [], [], "Player Cumulative Points");
-      return;
-    }
-
-    const player = elPlayerSelect.value;
-    if (!player){
-      setText(elPlayerHint, "Pilih player dulu.");
-      return;
-    }
-
-    const ranged = filterByRange(matchesRows, elPlayerRange.value).filter(r => r.player === player);
-
-    const wins = ranged.reduce((s,r)=> s + (r.wins||0), 0);
-    const losses = ranged.reduce((s,r)=> s + (r.losses||0), 0);
-    const played = wins + losses;
-    const wr = played ? ((wins/played)*100).toFixed(1) + "%" : "0.0%";
-
-    setText(elPMatches, String(played));
-    setText(elPWinrate, wr);
-
-    const byDay = groupByDate(ranged);
-    const labels = byDay.map(d => d.date);
-    const ptsDay = byDay.map(d => d.points);
-
-    let run = 0;
-    const ptsCum = ptsDay.map(v => (run += v));
-
-    drawLineChart(cPlayerPts, labels, ptsDay, "Points per Match Day (" + player + ")");
-    drawLineChart(cPlayerCum, labels, ptsCum, "Cumulative Points (" + player + ")");
-
-    setText(elPlayerHint, "");
+  if (!MATCHES_CSV_URL){
+    safeSet(elPlayerHint,
+      "Tab ini butuh MATCHES_CSV_URL (sheet Matches). Publish as CSV, lalu tempel URL-nya di code."
+    );
+    safeSet(elPMatches, "-");
+    safeSet(elPWinrate, "-");
+    safeSet(elPHiBestDay, "-");
+    safeSet(elPHiStreak, "-");
+    safeSet(elPHiAvgPts, "-");
+    safeSet(elPHiPlayed, "-");
+    safeChart(cPlayerPts, [], [], "Player Points per Match Day");
+    safeChart(cPlayerCum, [], [], "Player Cumulative Points");
+    return;
   }
 
-  elPlayerSelect.addEventListener("change", renderPlayerTrends);
-  elPlayerRange.addEventListener("change", renderPlayerTrends);
+  const player = (elPlayerSelect && elPlayerSelect.value) ? elPlayerSelect.value : "";
+  if (!player){
+    safeSet(elPlayerHint, "Pilih player dulu.");
+    safeSet(elPMatches, "-");
+    safeSet(elPWinrate, "-");
+    return;
+  }
 
-  // =========================
-  // Loading
-  // =========================
-  async function loadLeaderboard(){
+  // Filter: range + month + player
+  let ranged = filterByRange(matchesRows, elPlayerRange.value).filter(r => r.player === player);
+  ranged = applyMonthFilter(ranged, elPlayerMonth ? elPlayerMonth.value : "all");
+
+  safeSet(elPlayerHint, ranged.length ? "" : "Tidak ada data pada filter ini.");
+
+  // totals
+  const wins = ranged.reduce((s,r)=> s + (r.wins||0), 0);
+  const losses = ranged.reduce((s,r)=> s + (r.losses||0), 0);
+  const played = wins + losses;
+  const wr = played ? ((wins/played)*100).toFixed(1) + "%" : "0.0%";
+
+  safeSet(elPMatches, String(played));
+  safeSet(elPWinrate, wr);
+
+  // by day
+  const byDay = groupByDate(ranged);
+  const labels = byDay.map(d => d.date);
+  const ptsDay = byDay.map(d => d.points);
+
+  let acc = 0;
+  const ptsCum = ptsDay.map(v => (acc += v));
+
+  safeChart(cPlayerPts, labels, ptsDay, "Player Points per Match Day");
+  safeChart(cPlayerCum, labels, ptsCum, "Player Cumulative Points");
+
+  // Player highlights (same style as tab2)
+  safeSet(elPHiPlayed, String(played));
+  safeSet(elPHiBestDay, bestMatchDay(byDay));
+  const streak = longestWinrateStreak(byDay, 60);
+  safeSet(elPHiStreak, String(streak) + " days");
+  const avgPts = byDay.length ? (byDay.reduce((s,d)=>s + d.points, 0) / byDay.length) : 0;
+  safeSet(elPHiAvgPts, avgPts.toFixed(1));
+}
+
+
+async function loadLeaderboard(){
     const res = await fetch(LEADERBOARD_CSV_URL, { cache: "no-store" });
     const text = await res.text();
     const parsed = parseCSV(text);
@@ -1014,40 +1375,42 @@
     matchesRows = parsed.length ? toMatches(parsed) : [];
   }
 
-  async function loadAll(){
-    // leaderboard should not be blocked by matches
-    try{
-      await loadLeaderboard();
-      setText(elLastUpdate, nowHHMM());
-      elPodium.innerHTML = "";
-      renderPodium(leaderboardRows);
-      renderLeaderboard();
-    } catch (e){
-      console.error("Leaderboard load failed:", e);
-      elTbody.innerHTML = `<tr><td colspan="7" class="muted">Gagal load leaderboard CSV. Cek URL / publish permission.</td></tr>`;
-      elPodium.innerHTML = "";
-    }
-
-    try{
-      await loadMatches();
-      if (MATCHES_CSV_URL){
-        renderMatchDayTrends();
-        renderPlayerSelect();
-        renderPlayerTrends();
-      }
-    } catch (e){
-      console.error("Matches load failed:", e);
-      setText(elMatchesHint, "Gagal load Matches CSV. Cek URL / publish permission.");
-      setText(elPlayerHint, "Gagal load Matches CSV. Cek URL / publish permission.");
-      renderMatchDayTrends(); // will show hint/empty charts safely
-      renderPlayerSelect();
-      renderPlayerTrends();
-    }
+  async async function loadAll(){
+  // Leaderboard should render even if Matches fails
+  try{
+    await loadLeaderboard();
+    safeSet(elLastUpdate, nowHHMM());
+    elPodium.innerHTML = "";
+    renderPodium(leaderboardRows);
+    renderLeaderboard();
+  } catch (e){
+    console.error("Leaderboard load failed:", e);
   }
 
-  // kick off
+  // Matches (tabs 2 & 3) should not break tab1
+  try{
+    await loadMatches();
+    if (MATCHES_CSV_URL){
+      renderMatchDayTrends();
+      renderPlayerSelect();
+      renderPlayerTrends();
+    } else {
+      renderMatchDayTrends();
+      renderPlayerTrends();
+    }
+  } catch (e){
+    console.error("Matches load failed:", e);
+    // still try to render empty states
+    renderMatchDayTrends();
+    renderPlayerTrends();
+  }
+}
+
   loadAll();
   setInterval(loadAll, 60000);
 </script>
 </body>
 </html>
+
+
+
