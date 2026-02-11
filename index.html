@@ -1390,7 +1390,8 @@ async function loadLeaderboard(){
   }
 
 async function loadAll(){
-  // Leaderboard should render even if Matches fails
+
+  // --- Leaderboard ---
   try{
     await loadLeaderboard();
     safeSet(elLastUpdate, nowHHMM());
@@ -1400,6 +1401,21 @@ async function loadAll(){
   } catch (e){
     console.error("Leaderboard load failed:", e);
   }
+
+  // --- Matches (Tab 2 & 3) ---
+  try{
+    await loadMatches();
+
+    // ⬇ WAJIB setelah matchesRows terisi
+    renderPlayerSelect();
+    renderMatchDayTrends();
+    renderPlayerTrends();
+
+  } catch (e){
+    console.error("Matches load failed:", e);
+  }
+}
+
 
   // Matches (tabs 2 & 3) should not break tab1
   try{
