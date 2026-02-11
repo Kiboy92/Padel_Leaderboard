@@ -8,6 +8,8 @@
     :root{
       --bg:#0b1020; --card:#121a33; --line:rgba(255,255,255,.12);
       --text:#e9ecff; --muted:rgba(233,236,255,.72);
+      --accent: rgba(159,176,255,.22);
+      --accent2: rgba(62,243,178,.18);
     }
     *{box-sizing:border-box}
     body{
@@ -26,12 +28,13 @@
     }
     h1{margin:0; font-size:22px; letter-spacing:.3px}
     .sub{margin-top:6px; color:var(--muted); font-size:13px}
+    .muted{color:var(--muted); font-size:12px}
     .toolbar{
       display:flex; gap:10px; flex-wrap:wrap;
       justify-content:space-between; align-items:center;
     }
     .right{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    input,select{
+    input,select,button{
       padding:10px 12px; border-radius:12px;
       border:1px solid var(--line);
       background: rgba(11,16,32,.65);
@@ -39,12 +42,35 @@
       outline:none;
     }
     input::placeholder{color:rgba(233,236,255,.45)}
+    button{cursor:pointer}
+    button:hover{background: rgba(159,176,255,.14)}
     .pill{
       padding:6px 10px; border-radius:999px;
       border:1px solid var(--line);
       background: rgba(11,16,32,.55);
       font-size:12px; color:var(--muted);
     }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding-bottom: 10px;
+    }
+    .tabBtn{
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(11,16,32,.55);
+      font-size: 13px;
+    }
+    .tabBtn.active{
+      background: rgba(159,176,255,.22);
+      border-color: rgba(159,176,255,.45);
+    }
+    .tabPanel{ display:none; margin-top: 12px; }
+    .tabPanel.active{ display:block; }
 
     /* Podium */
     .podium{
@@ -60,7 +86,6 @@
       border-radius:16px;
       padding:12px;
       background: rgba(11,16,32,.55);
-      /* animation base */
       transform: translateY(10px) scale(.98);
       opacity: 0;
       animation: podiumIn 650ms cubic-bezier(.2,.9,.2,1) forwards;
@@ -72,10 +97,7 @@
     }
     .podiumTitle{font-size:20px}
     .podiumMeta{margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35}
-    .podiumGlow{
-      position: relative;
-      overflow: hidden;
-    }
+    .podiumGlow{ position: relative; overflow: hidden; }
     .podiumGlow:before{
       content:"";
       position:absolute; inset:-40%;
@@ -84,27 +106,25 @@
       opacity:.55;
       pointer-events:none;
     }
-
     @keyframes podiumIn{
       0%   { opacity:0; transform: translateY(14px) scale(.97); filter: blur(1px); }
       60%  { opacity:1; transform: translateY(0px)  scale(1.01); filter: blur(0px); }
       100% { opacity:1; transform: translateY(0px)  scale(1); }
     }
 
-    /* Table wrapper: helps mobile spacing + right padding */
+    /* Table wrapper: mobile spacing + right padding */
     .tableWrap{
       margin-top:12px;
       overflow-x:auto;
       -webkit-overflow-scrolling: touch;
-      padding-right: 10px; /* makes last column not kiss the edge on iPhone */
+      padding-right: 10px;
     }
-
     table{
       width:100%;
       border-collapse:collapse;
       overflow:hidden;
       border-radius:14px;
-      min-width: 760px; /* so it won't squeeze columns too much on phones */
+      min-width: 760px;
     }
     th,td{
       padding:10px;
@@ -115,12 +135,32 @@
     th{font-size:12px; color:rgba(233,236,255,.75)}
     tbody tr:hover{background: rgba(159,176,255,.06)}
     .num{text-align:right; font-variant-numeric: tabular-nums}
-    .muted{color:var(--muted); font-size:12px}
+    table th:last-child, table td:last-child{ padding-right: 18px; }
 
-    /* ✅ Fix “Winrate mepet kanan”: add extra right padding for last column */
-    table th:last-child,
-    table td:last-child{
-      padding-right: 18px;
+    /* Trend layout */
+    .grid2{
+      display:grid; gap: 12px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 12px;
+    }
+    @media (max-width: 860px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+    .miniCard{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(11,16,32,.55);
+    }
+    .miniTitle{ font-size: 13px; color: rgba(233,236,255,.82); }
+    .bigNum{ font-size: 26px; margin-top: 6px; font-weight: 700; letter-spacing:.2px; }
+    canvas{
+      width:100%;
+      height: 240px;
+      background: rgba(11,16,32,.40);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      display:block;
     }
 
     /* Mobile polish */
@@ -139,61 +179,212 @@
       <div class="toolbar">
         <div>
           <h1>Padel Leaderboard</h1>
-          <div class="sub">Top 3 podium + leaderboard dari Google Sheets (CSV). Auto refresh tiap 60 detik.</div>
+          <div class="sub">Landing + Trends (Match Day & Individual). Auto refresh tiap 60 detik.</div>
         </div>
 
         <div class="right">
-          <input id="search" placeholder="Search nama..." />
-          <select id="sortBy" title="Sort">
-            <option value="points_desc">Points (tinggi → rendah)</option>
-            <option value="win_desc">Win (tinggi → rendah)</option>
-            <option value="played_desc">Played (tinggi → rendah)</option>
-            <option value="name_asc">Name (A → Z)</option>
-            <option value="winrate_desc">Winrate (tinggi → rendah)</option>
-          </select>
-          <span class="pill">Total pemain: <b id="count">0</b></span>
+          <span class="pill">Last update: <b id="lastUpdate">-</b></span>
         </div>
       </div>
 
-      <div id="podium" class="podium"></div>
-
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:52px">#</th>
-              <th>Name</th>
-              <th class="num">Played</th>
-              <th class="num">Win</th>
-              <th class="num">Lose</th>
-              <th class="num">Points</th>
-              <th class="num">Winrate</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tabBtn active" data-tab="tab1">Tab 1 — Leaderboard</button>
+        <button class="tabBtn" data-tab="tab2">Tab 2 — Trend Match Day</button>
+        <button class="tabBtn" data-tab="tab3">Tab 3 — Trend Individual</button>
       </div>
 
-      <div class="muted" style="margin-top:10px">
-        Kalau datanya belum muncul: pastikan Google Sheets kamu sudah <i>Publish to web</i> sebagai CSV dan kolomnya sesuai.
-      </div>
+      <!-- TAB 1: Leaderboard -->
+      <section id="tab1" class="tabPanel active">
+        <div class="toolbar" style="margin-top: 6px;">
+          <div class="right" style="width:100%; justify-content:flex-end;">
+            <input id="search" placeholder="Search nama..." />
+            <select id="sortBy" title="Sort">
+              <option value="points_desc">Points (tinggi → rendah)</option>
+              <option value="win_desc">Win (tinggi → rendah)</option>
+              <option value="winrate_desc">Winrate (tinggi → rendah)</option>
+              <option value="played_desc">Played (tinggi → rendah)</option>
+              <option value="name_asc">Name (A → Z)</option>
+            </select>
+            <span class="pill">Total pemain: <b id="count">0</b></span>
+          </div>
+        </div>
+
+        <div id="podium" class="podium"></div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:52px">#</th>
+                <th>Name</th>
+                <th class="num">Played</th>
+                <th class="num">Win</th>
+                <th class="num">Lose</th>
+                <th class="num">Points</th>
+                <th class="num">Winrate</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="muted" style="margin-top:10px">
+          Tab 2 & 3 butuh data “Matches” (per match day). Kalau belum ada, tinggal publish sheet Matches jadi CSV & tempel URL-nya di code.
+        </div>
+      </section>
+
+      <!-- TAB 2: Trend Match Day -->
+      <section id="tab2" class="tabPanel">
+        <div class="toolbar" style="margin-top: 6px;">
+          <div class="right" style="width:100%; justify-content:flex-end;">
+            <select id="trendRange">
+              <option value="30">Last 30 days</option>
+              <option value="60">Last 60 days</option>
+              <option value="365">Last 365 days</option>
+              <option value="all">All</option>
+            </select>
+            <span class="pill">Match days: <b id="mdCount">0</b></span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="miniCard">
+            <div class="miniTitle">Total Matches (range)</div>
+            <div class="bigNum" id="totalMatchesRange">-</div>
+            <div class="muted">Jumlah baris match yang masuk pada range terpilih.</div>
+          </div>
+          <div class="miniCard">
+            <div class="miniTitle">Total Points (range)</div>
+            <div class="bigNum" id="totalPointsRange">-</div>
+            <div class="muted">Akumulasi points dari semua match di range.</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="muted" style="margin:6px 2px;">Total Points per Match Day</div>
+            <canvas id="chartPointsDay" width="900" height="260"></canvas>
+          </div>
+          <div>
+            <div class="muted" style="margin:6px 2px;">Cumulative Points (Growth)</div>
+            <canvas id="chartPointsCum" width="900" height="260"></canvas>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px" id="matchesHint"></div>
+      </section>
+
+      <!-- TAB 3: Trend Individual -->
+      <section id="tab3" class="tabPanel">
+        <div class="toolbar" style="margin-top: 6px;">
+          <div class="right" style="width:100%; justify-content:flex-end;">
+            <select id="playerSelect"></select>
+            <select id="playerRange">
+              <option value="30">Last 30 days</option>
+              <option value="60">Last 60 days</option>
+              <option value="365">Last 365 days</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="miniCard">
+            <div class="miniTitle">Player Matches (range)</div>
+            <div class="bigNum" id="pMatches">-</div>
+            <div class="muted">Jumlah match player di range.</div>
+          </div>
+          <div class="miniCard">
+            <div class="miniTitle">Player Winrate (range)</div>
+            <div class="bigNum" id="pWinrate">-</div>
+            <div class="muted">Win / Played pada range.</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="muted" style="margin:6px 2px;">Player Points per Match Day</div>
+            <canvas id="chartPlayerPts" width="900" height="260"></canvas>
+          </div>
+          <div>
+            <div class="muted" style="margin:6px 2px;">Player Cumulative Points</div>
+            <canvas id="chartPlayerCum" width="900" height="260"></canvas>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px" id="playerHint"></div>
+      </section>
+
     </div>
   </div>
 
 <script>
-  const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQa_3k4XRT_CetrvxU0E2wlGlsis3bbt9mRFk85jfLb8w4FsGBxadPNPGQRdjkCU9_4Wywmu1wr2f9P/pub?gid=0&single=true&output=csv";
+  // =========================
+  // 1) LEADERBOARD CSV (kamu sudah punya)
+  // =========================
+  const LEADERBOARD_CSV_URL =
+    "https://docs.google.com/spreadsheets/d/e/2PACX-1vQa_3k4XRT_CetrvxU0E2wlGlsis3bbt9mRFk85jfLb8w4FsGBxadPNPGQRdjkCU9_4Wywmu1wr2f9P/pub?gid=0&single=true&output=csv";
 
-  let rows = [];
+  // =========================
+  // 2) MATCHES CSV (buat trend)
+  // Isi jika kamu sudah publish sheet Matches → output=csv
+  // Contoh format kolom: Date, Player, Result(W/L), Points
+  // =========================
+  const MATCHES_CSV_URL = ""; // <-- tempel di sini nanti
 
+  let leaderboardRows = [];
+  let matchesRows = []; // {date: 'YYYY-MM-DD', player:'', result:'W/L', points:number}
+
+  // elements
+  const elLastUpdate = document.getElementById("lastUpdate");
+
+  // tab 1
   const elTbody = document.getElementById("tbody");
   const elSearch = document.getElementById("search");
   const elSortBy = document.getElementById("sortBy");
   const elCount  = document.getElementById("count");
   const elPodium = document.getElementById("podium");
 
+  // tab 2
+  const elTrendRange = document.getElementById("trendRange");
+  const elMdCount = document.getElementById("mdCount");
+  const elTotalMatchesRange = document.getElementById("totalMatchesRange");
+  const elTotalPointsRange = document.getElementById("totalPointsRange");
+  const elMatchesHint = document.getElementById("matchesHint");
+  const cPointsDay = document.getElementById("chartPointsDay");
+  const cPointsCum = document.getElementById("chartPointsCum");
+
+  // tab 3
+  const elPlayerSelect = document.getElementById("playerSelect");
+  const elPlayerRange = document.getElementById("playerRange");
+  const elPMatches = document.getElementById("pMatches");
+  const elPWinrate = document.getElementById("pWinrate");
+  const elPlayerHint = document.getElementById("playerHint");
+  const cPlayerPts = document.getElementById("chartPlayerPts");
+  const cPlayerCum = document.getElementById("chartPlayerCum");
+
+  // =========================
+  // Utilities
+  // =========================
   function toNum(v){
     const n = Number(String(v ?? "").trim());
     return Number.isFinite(n) ? n : 0;
+  }
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function normalizeHeaders(h){
+    return String(h || "").trim().toLowerCase();
+  }
+  function winrate(p){
+    if (!p.played) return 0;
+    return (p.win / p.played) * 100;
   }
 
   // CSV parser (supports quoted values)
@@ -226,42 +417,35 @@
     return out;
   }
 
-  function escapeHtml(str){
-    return String(str ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
+  // =========================
+  // Leaderboard mapping (robust)
+  // =========================
+  function toLeaderboardPlayers(parsed){
+    const header = (parsed[0] || []).map(h => normalizeHeaders(h));
 
-  function winrate(p){
-    if (!p.played) return 0;
-    return (p.win / p.played) * 100;
-  }
-
-  function normalizeHeaders(h){
-    return String(h || "").trim().toLowerCase();
-  }
-
-  function toPlayers(parsed){
-    const header = parsed[0] || [];
-    const idx = {};
-    header.forEach((h, i) => idx[normalizeHeaders(h)] = i);
-
-    const required = ["name","played","win","lose","points"];
-    const missing = required.filter(k => !(k in idx));
-
-    // fallback fixed order 0..4 if headers don’t match
-    if (missing.length){
-      return parsed.slice(1).map(cols => ({
-        name: (cols[0] || "").trim(),
-        played: toNum(cols[1]),
-        win: toNum(cols[2]),
-        lose: toNum(cols[3]),
-        points: toNum(cols[4]),
-      })).filter(p => p.name);
+    function findIdx(candidates){
+      for (const c of candidates){
+        const i = header.indexOf(c);
+        if (i !== -1) return i;
+      }
+      return -1;
     }
+
+    const iName   = findIdx(["name","nama","player","pemain"]);
+    const iPlayed = findIdx(["played","main","games","match"]);
+    const iWin    = findIdx(["win","menang","w"]);
+    const iLose   = findIdx(["lose","loss","kalah","l"]);
+    const iPoints = findIdx(["points","poin","point","skor","score"]);
+
+    const fallback = { iName:0, iPlayed:1, iWin:2, iLose:3, iPoints:4 };
+
+    const idx = {
+      name:   iName   !== -1 ? iName   : fallback.iName,
+      played: iPlayed !== -1 ? iPlayed : fallback.iPlayed,
+      win:    iWin    !== -1 ? iWin    : fallback.iWin,
+      lose:   iLose   !== -1 ? iLose   : fallback.iLose,
+      points: iPoints !== -1 ? iPoints : fallback.iPoints,
+    };
 
     return parsed.slice(1).map(cols => ({
       name: (cols[idx.name] || "").trim(),
@@ -272,6 +456,112 @@
     })).filter(p => p.name);
   }
 
+  // =========================
+  // Matches mapping (Date/Player/Result/Points)
+  // =========================
+  function toMatches(parsed){
+  const header = (parsed[0] || []).map(h => normalizeHeaders(h));
+
+  function findIdx(candidates){
+    for (const c of candidates){
+      const i = header.indexOf(c);
+      if (i !== -1) return i;
+    }
+    return -1;
+  }
+
+  const iDate   = findIdx(["date","tanggal"]);
+  const iSess   = findIdx(["session/court","session","court","venue","lapangan"]);
+  const iPlayer = findIdx(["player","name","nama","pemain"]);
+  const iWin    = findIdx(["win","menang","w"]);
+  const iLose   = findIdx(["lose","loss","kalah","l"]);
+  const iPoints = findIdx(["points","poin","point","skor","score"]);
+  const iPlayed = findIdx(["played","main","games","match"]);
+
+  if (iDate === -1 || iPlayer === -1) return [];
+
+  return parsed.slice(1).map(cols => {
+    const rawDate = (cols[iDate] || "").trim();
+    const date = normalizeDate(rawDate);
+
+    const player = (cols[iPlayer] || "").trim();
+    const session = iSess !== -1 ? (cols[iSess] || "").trim() : "";
+
+    const wins = iWin !== -1 ? toNum(cols[iWin]) : 0;
+    const losses = iLose !== -1 ? toNum(cols[iLose]) : 0;
+
+    // played kadang ada di CSV, tapi kalau nggak ada / kosong, kita hitung dari win+lose
+    const playedFromCol = iPlayed !== -1 ? toNum(cols[iPlayed]) : 0;
+    const played = playedFromCol || (wins + losses);
+
+    const points = iPoints !== -1 ? toNum(cols[iPoints]) : 0;
+
+    return { date, session, player, wins, losses, played, points };
+  }).filter(r => r.date && r.player);
+}
+
+
+  function normalizeDate(s){
+    // supports: YYYY-MM-DD, YYYY/MM/DD, DD/MM/YYYY, etc. Best effort.
+    const t = String(s || "").trim();
+    if (!t) return "";
+
+    // already ISO-like
+    const iso = t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (iso){
+      const y = iso[1];
+      const m = String(iso[2]).padStart(2,"0");
+      const d = String(iso[3]).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+
+    // DD/MM/YYYY
+    const dmy = t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (dmy){
+      const d = String(dmy[1]).padStart(2,"0");
+      const m = String(dmy[2]).padStart(2,"0");
+      const y = dmy[3];
+      return `${y}-${m}-${d}`;
+    }
+
+    // fallback: try Date parse
+    const dt = new Date(t);
+    if (!isNaN(dt.getTime())){
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,"0");
+      const d = String(dt.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
+    }
+
+    return "";
+  }
+
+  function nowHHMM(){
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${hh}:${mm}`;
+  }
+
+  // =========================
+  // Tabs
+  // =========================
+  document.querySelectorAll(".tabBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tabPanel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.tab).classList.add("active");
+
+      // refresh charts when user opens tab
+      if (btn.dataset.tab === "tab2") renderMatchDayTrends();
+      if (btn.dataset.tab === "tab3") renderPlayerTrends();
+    });
+  });
+
+  // =========================
+  // Tab 1: Sorting + rendering
+  // =========================
   function applyFilterSort(list){
     const q = elSearch.value.trim().toLowerCase();
     let out = q ? list.filter(p => p.name.toLowerCase().includes(q)) : [...list];
@@ -281,10 +571,10 @@
       if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
       if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
       if (mode === "winrate_desc") {
-  const wa = a.played ? a.win / a.played : 0;
-  const wb = b.played ? b.win / b.played : 0;
-  return (wb - wa) || (b.points - a.points) || a.name.localeCompare(b.name);
-}
+        const wa = a.played ? a.win / a.played : 0;
+        const wb = b.played ? b.win / b.played : 0;
+        return (wb - wa) || (b.points - a.points) || a.name.localeCompare(b.name);
+      }
       if (mode === "played_desc") return (b.played-a.played) || (b.points-a.points) || a.name.localeCompare(b.name);
       if (mode === "name_asc") return a.name.localeCompare(b.name);
       return 0;
@@ -293,54 +583,53 @@
     return out;
   }
 
-function renderPodium(allRows){
-  const mode = elSortBy.value;
+  function renderPodium(allRows){
+    const mode = elSortBy.value;
 
-  const sorted = [...allRows].sort((a,b)=>{
-    if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
-    if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
-    if (mode === "winrate_desc") {
-      const wa = a.played ? a.win / a.played : 0;
-      const wb = b.played ? b.win / b.played : 0;
-      return (wb - wa) || (b.points - a.points) || a.name.localeCompare(b.name);
+    const sorted = [...allRows].sort((a,b)=>{
+      if (mode === "points_desc") return (b.points-a.points) || (b.win-a.win) || a.name.localeCompare(b.name);
+      if (mode === "win_desc") return (b.win-a.win) || (b.points-a.points) || a.name.localeCompare(b.name);
+      if (mode === "winrate_desc") {
+        const wa = a.played ? a.win / a.played : 0;
+        const wb = b.played ? b.win / b.played : 0;
+        return (wb - wa) || (b.points - a.points) || a.name.localeCompare(b.name);
+      }
+      if (mode === "played_desc") return (b.played-a.played) || (b.points-a.points) || a.name.localeCompare(b.name);
+      if (mode === "name_asc") return a.name.localeCompare(b.name);
+      return 0;
+    });
+
+    const top = sorted.slice(0,3);
+    const medals = ["🥇","🥈","🥉"];
+    elPodium.innerHTML = "";
+
+    if (top.length === 0){
+      elPodium.innerHTML = `<div class="muted">Belum ada data untuk podium.</div>`;
+      return;
     }
-    if (mode === "played_desc") return (b.played-a.played) || (b.points-a.points) || a.name.localeCompare(b.name);
-    if (mode === "name_asc") return a.name.localeCompare(b.name);
-    return 0;
-  });
 
-  const top = sorted.slice(0,3);
-
-  const medals = ["🥇","🥈","🥉"];
-  elPodium.innerHTML = "";
-
-  if (top.length === 0){
-    elPodium.innerHTML = `<div class="muted">Belum ada data untuk podium.</div>`;
-    return;
+    top.forEach((p, i)=>{
+      const wr = winrate(p).toFixed(1) + "%";
+      const div = document.createElement("div");
+      div.className = "podiumCard podiumGlow";
+      div.style.animationDelay = `${i * 120}ms`;
+      div.innerHTML = `
+        <div class="podiumTitle">${medals[i]} <b>${escapeHtml(p.name)}</b></div>
+        <div class="podiumMeta">
+          Played: <b>${p.played}</b> • W: <b>${p.win}</b> • L: <b>${p.lose}</b><br/>
+          Points: <b>${p.points}</b> • Winrate: <b>${wr}</b>
+        </div>
+      `;
+      elPodium.appendChild(div);
+    });
   }
 
-  top.forEach((p, i)=>{
-    const wr = winrate(p).toFixed(1) + "%";
-    const div = document.createElement("div");
-    div.className = "podiumCard podiumGlow";
-    div.style.animationDelay = `${i * 120}ms`;
-    div.innerHTML = `
-      <div class="podiumTitle">${medals[i]} <b>${escapeHtml(p.name)}</b></div>
-      <div class="podiumMeta">
-        Played: <b>${p.played}</b> • W: <b>${p.win}</b> • L: <b>${p.lose}</b><br/>
-        Points: <b>${p.points}</b> • Winrate: <b>${wr}</b>
-      </div>
-    `;
-    elPodium.appendChild(div);
-  });
-}
-
-  function render(){
-    const list = applyFilterSort(rows);
-    elCount.textContent = String(rows.length);
+  function renderLeaderboard(){
+    const list = applyFilterSort(leaderboardRows);
+    elCount.textContent = String(leaderboardRows.length);
     elTbody.innerHTML = "";
 
-    if (rows.length === 0){
+    if (leaderboardRows.length === 0){
       elTbody.innerHTML = `<tr><td colspan="7" class="muted">Data kosong / belum kebaca dari CSV.</td></tr>`;
       return;
     }
@@ -361,34 +650,269 @@ function renderPodium(allRows){
     });
   }
 
-  async function load(){
+  elSearch.addEventListener("input", () => renderLeaderboard());
+  elSortBy.addEventListener("change", () => {
+    elPodium.innerHTML = "";
+    renderPodium(leaderboardRows);
+    renderLeaderboard();
+  });
+
+  // =========================
+  // Trends helpers (Match Day aggregation)
+  // =========================
+  function filterByRange(records, daysOrAll){
+    if (daysOrAll === "all") return [...records];
+    const days = Number(daysOrAll);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    return records.filter(r => {
+      const d = new Date(r.date + "T00:00:00");
+      return !isNaN(d.getTime()) && d >= cutoff;
+    });
+  }
+
+  function groupByDate(records){
+  const map = new Map();
+
+  records.forEach(r => {
+    if (!map.has(r.date)) map.set(r.date, {date:r.date, matches:0, points:0, wins:0, losses:0});
+    const g = map.get(r.date);
+
+    // ✅ matches = total played (lebih realistis daripada jumlah row)
+    g.matches += (r.played || 0);
+    g.points += (r.points || 0);
+    g.wins += (r.wins || 0);
+    g.losses += (r.losses || 0);
+  });
+
+  return Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
+}
+
+  // =========================
+  // Tiny canvas chart (line)
+  // =========================
+  function drawLineChart(canvas, labels, values, title){
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // clear
+    ctx.clearRect(0,0,w,h);
+
+    // padding
+    const padL = 42, padR = 18, padT = 18, padB = 34;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    // title
+    ctx.fillStyle = "rgba(233,236,255,.78)";
+    ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(title || "", padL, 14);
+
+    if (!values.length){
+      ctx.fillStyle = "rgba(233,236,255,.6)";
+      ctx.fillText("No data", padL, padT + 18);
+      return;
+    }
+
+    const minV = Math.min(...values);
+    const maxV = Math.max(...values);
+    const span = (maxV - minV) || 1;
+
+    // grid lines
+    ctx.strokeStyle = "rgba(255,255,255,.07)";
+    ctx.lineWidth = 1;
+    for (let i=0;i<=4;i++){
+      const y = padT + (plotH * i/4);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+    }
+
+    // axes labels (min/max)
+    ctx.fillStyle = "rgba(233,236,255,.55)";
+    ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(String(maxV), 6, padT+4);
+    ctx.fillText(String(minV), 6, padT+plotH);
+
+    // line
+    ctx.strokeStyle = "rgba(159,176,255,.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    values.forEach((v, i)=>{
+      const x = padL + (plotW * (values.length===1 ? 0 : i/(values.length-1)));
+      const y = padT + plotH - ((v - minV)/span) * plotH;
+      if (i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // points
+    ctx.fillStyle = "rgba(62,243,178,.85)";
+    values.forEach((v, i)=>{
+      const x = padL + (plotW * (values.length===1 ? 0 : i/(values.length-1)));
+      const y = padT + plotH - ((v - minV)/span) * plotH;
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    });
+
+    // x labels (first + last)
+    const first = labels[0] || "";
+    const last = labels[labels.length-1] || "";
+    ctx.fillStyle = "rgba(233,236,255,.55)";
+    ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(first, padL, h-12);
+    const lastW = ctx.measureText(last).width;
+    ctx.fillText(last, padL+plotW-lastW, h-12);
+  }
+
+  // =========================
+  // Tab 2: Match Day Trends
+  // =========================
+  function renderMatchDayTrends(){
+    if (!MATCHES_CSV_URL){
+      elMatchesHint.textContent =
+        "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code.";
+      elMdCount.textContent = "0";
+      elTotalMatchesRange.textContent = "-";
+      elTotalPointsRange.textContent = "-";
+      drawLineChart(cPointsDay, [], [], "Total Points per Day");
+      drawLineChart(cPointsCum, [], [], "Cumulative Points");
+      return;
+    }
+
+    const ranged = filterByRange(matchesRows, elTrendRange.value);
+    const byDay = groupByDate(ranged);
+
+    elMdCount.textContent = String(byDay.length);
+    elTotalMatchesRange.textContent = String(ranged.length);
+
+    const totalPts = ranged.reduce((s,r)=> s + (r.points||0), 0);
+    elTotalPointsRange.textContent = String(totalPts);
+
+    const labels = byDay.map(d => d.date);
+    const ptsDay = byDay.map(d => d.points);
+
+    // cumulative
+    let run = 0;
+    const ptsCum = ptsDay.map(v => (run += v));
+
+    drawLineChart(cPointsDay, labels, ptsDay, "Total Points per Match Day");
+    drawLineChart(cPointsCum, labels, ptsCum, "Cumulative Points (Growth)");
+
+    elMatchesHint.textContent = "";
+  }
+
+  elTrendRange.addEventListener("change", renderMatchDayTrends);
+
+  // =========================
+  // Tab 3: Player Trends
+  // =========================
+  function uniquePlayersFromMatches(){
+    const set = new Set(matchesRows.map(r => r.player).filter(Boolean));
+    return Array.from(set).sort((a,b)=> a.localeCompare(b));
+  }
+
+  function renderPlayerSelect(){
+    const players = uniquePlayersFromMatches();
+    elPlayerSelect.innerHTML = "";
+    if (!players.length){
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No players";
+      elPlayerSelect.appendChild(opt);
+      return;
+    }
+    players.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      elPlayerSelect.appendChild(opt);
+    });
+  }
+
+  function renderPlayerTrends(){
+    if (!MATCHES_CSV_URL){
+      elPlayerHint.textContent =
+        "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code.";
+      elPMatches.textContent = "-";
+      elPWinrate.textContent = "-";
+      drawLineChart(cPlayerPts, [], [], "Player Points per Day");
+      drawLineChart(cPlayerCum, [], [], "Player Cumulative Points");
+      return;
+    }
+
+    const player = elPlayerSelect.value;
+    if (!player){
+      elPlayerHint.textContent = "Pilih player dulu.";
+      return;
+    }
+
+    const ranged = filterByRange(matchesRows, elPlayerRange.value).filter(r => r.player === player);
+    const wins = ranged.reduce((s,r)=> s + (r.wins||0), 0);
+const losses = ranged.reduce((s,r)=> s + (r.losses||0), 0);
+const played = wins + losses;
+const wr = played ? ((wins/played)*100).toFixed(1) + "%" : "0.0%";
+
+    elPMatches.textContent = String(played);
+    elPWinrate.textContent = wr;
+
+    const byDay = groupByDate(ranged);
+    const labels = byDay.map(d => d.date);
+    const ptsDay = byDay.map(d => d.points);
+    let run = 0;
+    const ptsCum = ptsDay.map(v => (run += v));
+
+    drawLineChart(cPlayerPts, labels, ptsDay, "Points per Match Day (" + player + ")");
+    drawLineChart(cPlayerCum, labels, ptsCum, "Cumulative Points (" + player + ")");
+
+    elPlayerHint.textContent = "";
+  }
+
+  elPlayerSelect.addEventListener("change", renderPlayerTrends);
+  elPlayerRange.addEventListener("change", renderPlayerTrends);
+
+  // =========================
+  // Data loading
+  // =========================
+  async function loadLeaderboard(){
+    const res = await fetch(LEADERBOARD_CSV_URL, { cache: "no-store" });
+    const text = await res.text();
+    const parsed = parseCSV(text);
+    leaderboardRows = parsed.length ? toLeaderboardPlayers(parsed) : [];
+  }
+
+  async function loadMatches(){
+    if (!MATCHES_CSV_URL) { matchesRows = []; return; }
+    const res = await fetch(MATCHES_CSV_URL, { cache: "no-store" });
+    const text = await res.text();
+    const parsed = parseCSV(text);
+    matchesRows = parsed.length ? toMatches(parsed) : [];
+  }
+
+  async function loadAll(){
     try{
-      const res = await fetch(CSV_URL, { cache: "no-store" });
-      const text = await res.text();
-      const parsed = parseCSV(text);
+      await Promise.all([loadLeaderboard(), loadMatches()]);
+      elLastUpdate.textContent = nowHHMM();
 
-      rows = parsed.length ? toPlayers(parsed) : [];
+      // Tab 1
+      elPodium.innerHTML = "";
+      renderPodium(leaderboardRows);
+      renderLeaderboard();
 
-      // ✅ Re-trigger podium animation on refresh:
-      // Clear first so new nodes animate again
+      // Tabs 2 & 3 (if matches available)
+      if (MATCHES_CSV_URL){
+        renderMatchDayTrends();
+        renderPlayerSelect();
+        renderPlayerTrends();
+      }
+    } catch (e){
+      console.error(e);
+      elTbody.innerHTML = `<tr><td colspan="7" class="muted">Gagal load data. Cek CSV URL / publish permission.</td></tr>`;
       elPodium.innerHTML = "";
-      renderPodium(rows);
-      render();
-    } catch (err){
-      elTbody.innerHTML = `<tr><td colspan="7" class="muted">Gagal load data CSV. Cek publish settings / koneksi internet.</td></tr>`;
-      elPodium.innerHTML = "";
-      console.error(err);
     }
   }
 
-  elSortBy.addEventListener("change", () => {
-  elPodium.innerHTML = "";       // biar animasi ke-trigger ulang
-  renderPodium(rows);            // update podium sesuai mode sort
-  render();                      // update tabel
-});
-
-  load();
-  setInterval(load, 60000);
+  loadAll();
+  setInterval(loadAll, 60000);
 </script>
 </body>
 </html>
