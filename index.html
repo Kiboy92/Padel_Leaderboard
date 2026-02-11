@@ -610,6 +610,12 @@ const cWinrateDay = document.getElementById("chartWinrateDay");
     if (el) el.textContent = val;
   }
 
+  function uniquePlayersFromMatches(records){
+  return Array.from(
+    new Set((records || []).map(r => (r.player || "").trim()).filter(Boolean))
+  ).sort((a,b)=> a.localeCompare(b));
+}
+  
   function applyMonthFilter(records, monthValue){
     if (!monthValue || monthValue === "all") return records;
     const m = Number(monthValue);
