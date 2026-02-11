@@ -247,32 +247,56 @@
             <span class="pill">Match days: <b id="mdCount">0</b></span>
           </div>
         </div>
+        
+          <div class="grid2">
+  <div class="miniCard">
+    <div class="miniTitle">Total Matches (range)</div>
+    <div class="bigNum" id="totalMatchesRange">-</div>
+    <div class="muted">Jumlah total played (akumulasi Win+Lose/Played) pada range.</div>
+  </div>
 
-        <div class="grid2">
-          <div class="miniCard">
-            <div class="miniTitle">Total Matches (range)</div>
-            <div class="bigNum" id="totalMatchesRange">-</div>
-            <div class="muted">Jumlah baris match yang masuk pada range terpilih.</div>
-          </div>
-          <div class="miniCard">
-            <div class="miniTitle">Total Points (range)</div>
-            <div class="bigNum" id="totalPointsRange">-</div>
-            <div class="muted">Akumulasi points dari semua match di range.</div>
-          </div>
-        </div>
+  <div class="miniCard">
+    <div class="miniTitle">Total Points (range)</div>
+    <div class="bigNum" id="totalPointsRange">-</div>
+    <div class="muted">Akumulasi points dari semua sesi di range.</div>
+  </div>
 
-        <div class="grid2">
-          <div>
-            <div class="muted" style="margin:6px 2px;">Total Points per Match Day</div>
-            <canvas id="chartPointsDay" width="900" height="260"></canvas>
-          </div>
-          <div>
-            <div class="muted" style="margin:6px 2px;">Cumulative Points (Growth)</div>
-            <canvas id="chartPointsCum" width="900" height="260"></canvas>
-          </div>
-        </div>
+  <div class="miniCard">
+    <div class="miniTitle">Overall Winrate (range)</div>
+    <div class="bigNum" id="overallWinrateRange">-</div>
+    <div class="muted">Total win / (total win + total lose).</div>
+  </div>
 
-        <div class="muted" style="margin-top:10px" id="matchesHint"></div>
+  <div class="miniCard">
+    <div class="miniTitle">Winrate Streak ≥ <span id="streakThresholdLabel">60</span>%</div>
+    <div class="bigNum" id="winrateStreak">-</div>
+    <div class="muted">Match day berturut-turut (dalam range) dengan winrate ≥ threshold.</div>
+  </div>
+</div>
+
+
+      <div class="grid2">
+  <div>
+    <div class="muted" style="margin:6px 2px;">Total Points per Match Day</div>
+    <canvas id="chartPointsDay" width="900" height="260"></canvas>
+  </div>
+  <div>
+    <div class="muted" style="margin:6px 2px;">Cumulative Points (Growth)</div>
+    <canvas id="chartPointsCum" width="900" height="260"></canvas>
+  </div>
+</div>
+
+<div class="grid2">
+  <div>
+    <div class="muted" style="margin:6px 2px;">Total Matches per Match Day</div>
+    <canvas id="chartMatchesDay" width="900" height="260"></canvas>
+  </div>
+  <div>
+    <div class="muted" style="margin:6px 2px;">Club Winrate Trend per Match Day</div>
+    <canvas id="chartWinrateDay" width="900" height="260"></canvas>
+  </div>
+</div>
+
       </section>
 
       <!-- TAB 3: Trend Individual -->
@@ -354,6 +378,12 @@
   const elMatchesHint = document.getElementById("matchesHint");
   const cPointsDay = document.getElementById("chartPointsDay");
   const cPointsCum = document.getElementById("chartPointsCum");
+  const elOverallWinrateRange = document.getElementById("overallWinrateRange");
+const elWinrateStreak = document.getElementById("winrateStreak");
+const elStreakThresholdLabel = document.getElementById("streakThresholdLabel");
+const cMatchesDay = document.getElementById("chartMatchesDay");
+const cWinrateDay = document.getElementById("chartWinrateDay");
+
 
   // tab 3
   const elPlayerSelect = document.getElementById("playerSelect");
@@ -367,6 +397,25 @@
   // =========================
   // Utilities
   // =========================
+function longestWinrateStreak(days, thresholdPct){
+  // days = array hasil groupByDate: [{date, wins, losses, ...}]
+  let best = 0, cur = 0;
+
+  for (const d of days){
+    const played = (d.wins || 0) + (d.losses || 0);
+    const wr = played ? (d.wins / played) * 100 : 0;
+
+    if (wr >= thresholdPct){
+      cur += 1;
+      if (cur > best) best = cur;
+    } else {
+      cur = 0;
+    }
+  }
+  return best;
+}
+
+  
   function toNum(v){
     const n = Number(String(v ?? "").trim());
     return Number.isFinite(n) ? n : 0;
@@ -679,11 +728,10 @@
     if (!map.has(r.date)) map.set(r.date, {date:r.date, matches:0, points:0, wins:0, losses:0});
     const g = map.get(r.date);
 
-    // ✅ matches = total played (lebih realistis daripada jumlah row)
-    g.matches += (r.played || 0);
-    g.points += (r.points || 0);
-    g.wins += (r.wins || 0);
-    g.losses += (r.losses || 0);
+    g.matches += (r.played || (r.wins||0) + (r.losses||0));
+    g.points  += (r.points || 0);
+    g.wins    += (r.wins || 0);
+    g.losses  += (r.losses || 0);
   });
 
   return Array.from(map.values()).sort((a,b)=> a.date.localeCompare(b.date));
@@ -767,39 +815,65 @@
   // =========================
   // Tab 2: Match Day Trends
   // =========================
-  function renderMatchDayTrends(){
-    if (!MATCHES_CSV_URL){
-      elMatchesHint.textContent =
-        "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code.";
-      elMdCount.textContent = "0";
-      elTotalMatchesRange.textContent = "-";
-      elTotalPointsRange.textContent = "-";
-      drawLineChart(cPointsDay, [], [], "Total Points per Day");
-      drawLineChart(cPointsCum, [], [], "Cumulative Points");
-      return;
-    }
-
-    const ranged = filterByRange(matchesRows, elTrendRange.value);
-    const byDay = groupByDate(ranged);
-
-    elMdCount.textContent = String(byDay.length);
-    elTotalMatchesRange.textContent = String(ranged.length);
-
-    const totalPts = ranged.reduce((s,r)=> s + (r.points||0), 0);
-    elTotalPointsRange.textContent = String(totalPts);
-
-    const labels = byDay.map(d => d.date);
-    const ptsDay = byDay.map(d => d.points);
-
-    // cumulative
-    let run = 0;
-    const ptsCum = ptsDay.map(v => (run += v));
-
-    drawLineChart(cPointsDay, labels, ptsDay, "Total Points per Match Day");
-    drawLineChart(cPointsCum, labels, ptsCum, "Cumulative Points (Growth)");
-
-    elMatchesHint.textContent = "";
+ function renderMatchDayTrends(){
+  if (!MATCHES_CSV_URL){
+    elMatchesHint.textContent =
+      "Tab trend butuh MATCHES_CSV_URL. Publish sheet Matches sebagai CSV, lalu tempel URL-nya di const MATCHES_CSV_URL pada code.";
+    elMdCount.textContent = "0";
+    elTotalMatchesRange.textContent = "-";
+    elTotalPointsRange.textContent = "-";
+    elOverallWinrateRange.textContent = "-";
+    elWinrateStreak.textContent = "-";
+    drawLineChart(cPointsDay, [], [], "Total Points per Day");
+    drawLineChart(cPointsCum, [], [], "Cumulative Points");
+    drawLineChart(cMatchesDay, [], [], "Total Matches per Day");
+    drawLineChart(cWinrateDay, [], [], "Winrate per Day");
+    return;
   }
+
+  const ranged = filterByRange(matchesRows, elTrendRange.value);
+  const byDay = groupByDate(ranged);
+
+  elMdCount.textContent = String(byDay.length);
+
+  // totals range
+  const totalPoints = ranged.reduce((s,r)=> s + (r.points||0), 0);
+  const totalWins   = ranged.reduce((s,r)=> s + (r.wins||0), 0);
+  const totalLosses = ranged.reduce((s,r)=> s + (r.losses||0), 0);
+  const totalPlayed = totalWins + totalLosses;
+
+  elTotalPointsRange.textContent = String(totalPoints);
+  elTotalMatchesRange.textContent = String(totalPlayed);
+
+  const overallWR = totalPlayed ? ((totalWins/totalPlayed)*100).toFixed(1) + "%" : "0.0%";
+  elOverallWinrateRange.textContent = overallWR;
+
+  // streak settings
+  const THRESHOLD = 60; // kamu bisa bikin dropdown nanti kalau mau
+  elStreakThresholdLabel.textContent = String(THRESHOLD);
+  elWinrateStreak.textContent = String(longestWinrateStreak(byDay, THRESHOLD)) + " days";
+
+  // build series
+  const labels = byDay.map(d => d.date);
+
+  const matchesDay = byDay.map(d => d.matches);
+  const pointsDay  = byDay.map(d => d.points);
+
+  let runPts = 0;
+  const pointsCum = pointsDay.map(v => (runPts += v));
+
+  const winrateDay = byDay.map(d => {
+    const played = (d.wins||0) + (d.losses||0);
+    return played ? Number(((d.wins/played)*100).toFixed(1)) : 0;
+  });
+
+  drawLineChart(cPointsDay, labels, pointsDay, "Total Points per Match Day");
+  drawLineChart(cPointsCum, labels, pointsCum, "Cumulative Points (Growth)");
+  drawLineChart(cMatchesDay, labels, matchesDay, "Total Matches (Played) per Match Day");
+  drawLineChart(cWinrateDay, labels, winrateDay, "Club Winrate Trend per Match Day (%)");
+
+  elMatchesHint.textContent = "";
+}
 
   elTrendRange.addEventListener("change", renderMatchDayTrends);
 
@@ -916,4 +990,5 @@ const wr = played ? ((wins/played)*100).toFixed(1) + "%" : "0.0%";
 </script>
 </body>
 </html>
+
 
