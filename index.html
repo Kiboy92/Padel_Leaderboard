@@ -1375,7 +1375,7 @@ async function loadLeaderboard(){
     matchesRows = parsed.length ? toMatches(parsed) : [];
   }
 
-  async async function loadAll(){
+  async function loadAll(){
   // Leaderboard should render even if Matches fails
   try{
     await loadLeaderboard();
