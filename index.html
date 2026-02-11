@@ -1,4 +1,4 @@
-<!doctype html> 
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
@@ -606,12 +606,6 @@ const cWinrateDay = document.getElementById("chartWinrateDay");
   // =========================
   // Utilities
   // =========================
-function uniquePlayersFromMatches(records){
-  return Array.from(
-    new Set((records || []).map(r => (r.player || "").trim()).filter(Boolean))
-  ).sort((a,b)=> a.localeCompare(b));
-}
-  
   function safeSet(el, val){
     if (el) el.textContent = val;
   }
@@ -931,6 +925,14 @@ function longestWinrateStreak(days, thresholdPct){
     renderPodium(leaderboardRows);
     renderLeaderboard();
   });
+
+  // TAB 2 & TAB 3 listeners (keep UI reactive)
+  if (elTrendRange) elTrendRange.addEventListener("change", renderMatchDayTrends);
+  if (elTrendMonth) elTrendMonth.addEventListener("change", renderMatchDayTrends);
+
+  if (elPlayerSelect) elPlayerSelect.addEventListener("change", renderPlayerTrends);
+  if (elPlayerRange) elPlayerRange.addEventListener("change", renderPlayerTrends);
+  if (elPlayerMonth) elPlayerMonth.addEventListener("change", renderPlayerTrends);
 
   // =========================
   // Trends helpers (Match Day aggregation)
@@ -1289,37 +1291,22 @@ function renderMatchDayTrends(){
 
 
 function renderPlayerSelect(){
-  if (!elPlayerSelect) return;
-
-  // Ambil semua player dari data matches (tanpa dipengaruhi filter)
-  const players = Array.from(
-    new Set((matchesRows || []).map(r => (r.player || "").trim()).filter(Boolean))
-  ).sort((a,b)=> a.localeCompare(b));
-
-  elPlayerSelect.innerHTML = "";
-
-  if (!players.length){
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = "No players (check Matches CSV)";
-    elPlayerSelect.appendChild(opt);
-    return;
+    const players = uniquePlayersFromMatches();
+    elPlayerSelect.innerHTML = "";
+    if (!players.length){
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "No players";
+      elPlayerSelect.appendChild(opt);
+      return;
+    }
+    players.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      elPlayerSelect.appendChild(opt);
+    });
   }
-
-  const prev = elPlayerSelect.value;
-
-  players.forEach(p=>{
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    elPlayerSelect.appendChild(opt);
-  });
-
-  // restore previous selection if possible
-  if (prev && players.includes(prev)) elPlayerSelect.value = prev;
-  else elPlayerSelect.value = players[0];
-}
-
 
   function renderPlayerTrends(){
   if (!MATCHES_CSV_URL){
@@ -1396,7 +1383,7 @@ async function loadLeaderboard(){
     matchesRows = parsed.length ? toMatches(parsed) : [];
   }
 
-  async function loadAll(){
+async function loadAll(){
   // Leaderboard should render even if Matches fails
   try{
     await loadLeaderboard();
