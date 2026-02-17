@@ -397,9 +397,9 @@
           <div class="hiCard">
             <div class="hiTop">
               <div>
-                <div class="hiLabel">Best Match Day</div>
+                <div class="hiLabel">Highest Point in a Single Match</div>
                 <div class="hiValue" id="hiBestDay">-</div>
-                <div class="hiSub">Tanggal dengan points tertinggi (range)</div>
+                <div class="hiSub">Points tertinggi dari satu match (sesuai filter)</div>
               </div>
               <div class="hiIcon">⭐</div>
             </div>
@@ -469,9 +469,9 @@
           <div class="hiCard">
             <div class="hiTop">
               <div>
-                <div class="hiLabel">Player Best Day</div>
+                <div class="hiLabel">Highest Points Achieved</div>
                 <div class="hiValue" id="pHiBestDay">-</div>
-                <div class="hiSub">Best points day untuk player ini</div>
+                <div class="hiSub">Highest single match points</div>
               </div>
               <div class="hiIcon">⭐</div>
             </div>
@@ -480,9 +480,9 @@
           <div class="hiCard">
             <div class="hiTop">
               <div>
-                <div class="hiLabel">Player Longest Streak</div>
+                <div class="hiLabel">Total Played</div>
                 <div class="hiValue" id="pHiStreak">-</div>
-                <div class="hiSub">Winrate day-streak ≥ 60%</div>
+                <div class="hiSub">Total played pada filter aktif</div>
               </div>
               <div class="hiIcon">🔥</div>
             </div>
@@ -491,9 +491,9 @@
           <div class="hiCard">
             <div class="hiTop">
               <div>
-                <div class="hiLabel">Avg Points / Day</div>
+                <div class="hiLabel">Lowest Win Rate (Single Match)</div>
                 <div class="hiValue" id="pHiAvgPts">-</div>
-                <div class="hiSub">Rata-rata points per match day</div>
+                <div class="hiSub">Winrate terendah dari satu match</div>
               </div>
               <div class="hiIcon">🎯</div>
             </div>
@@ -502,9 +502,9 @@
           <div class="hiCard">
             <div class="hiTop">
               <div>
-                <div class="hiLabel">Total Played</div>
+                <div class="hiLabel">Highest Win Rate (Single Match)</div>
                 <div class="hiValue" id="pHiPlayed">-</div>
-                <div class="hiSub">Total played pada filter aktif</div>
+                <div class="hiSub">Winrate tertinggi dari satu match</div>
               </div>
               <div class="hiIcon">🧱</div>
             </div>
@@ -610,12 +610,6 @@ const cWinrateDay = document.getElementById("chartWinrateDay");
     if (el) el.textContent = val;
   }
 
-  function uniquePlayersFromMatches(records){
-  return Array.from(
-    new Set((records || []).map(r => (r.player || "").trim()).filter(Boolean))
-  ).sort((a,b)=> a.localeCompare(b));
-}
-  
   function applyMonthFilter(records, monthValue){
     if (!monthValue || monthValue === "all") return records;
     const m = Number(monthValue);
@@ -932,14 +926,6 @@ function longestWinrateStreak(days, thresholdPct){
     renderLeaderboard();
   });
 
-  // TAB 2 & TAB 3 listeners (keep UI reactive)
-  if (elTrendRange) elTrendRange.addEventListener("change", renderMatchDayTrends);
-  if (elTrendMonth) elTrendMonth.addEventListener("change", renderMatchDayTrends);
-
-  if (elPlayerSelect) elPlayerSelect.addEventListener("change", renderPlayerTrends);
-  if (elPlayerRange) elPlayerRange.addEventListener("change", renderPlayerTrends);
-  if (elPlayerMonth) elPlayerMonth.addEventListener("change", renderPlayerTrends);
-
   // =========================
   // Trends helpers (Match Day aggregation)
   // =========================
@@ -1135,6 +1121,16 @@ function safeChart(canvas, labels, values, title, suffix=""){
   return `${best.date} (${best.points} pts)`;
 }
 
+function highestPointSingleMatch(records){
+  if (!records || !records.length) return "-";
+  let best = records[0];
+  for (const r of records){
+    if ((r.points || 0) > (best.points || 0)) best = r;
+  }
+  return `${best.player} (${best.points} pts)`;
+}
+
+
 function mostActivePlayer(records){
   const map = new Map();
   records.forEach(r=>{
@@ -1254,7 +1250,7 @@ function renderMatchDayTrends(){
   safeSet(elWinrateStreak, String(streak) + " days");
 
   // Highlights (club-wide)
-  safeSet(elHiBestDay, bestMatchDay(byDay));
+  safeSet(elHiBestDay, highestPointSingleMatch(ranged));
   safeSet(elHiMostActive, mostActivePlayer(ranged));
   safeSet(elHiLongestStreak, longestStreakByPlayer(ranged, THRESHOLD));
 
@@ -1297,7 +1293,7 @@ function renderMatchDayTrends(){
 
 
 function renderPlayerSelect(){
-    const players = uniquePlayersFromMatches(matchesRows);
+    const players = uniquePlayersFromMatches();
     elPlayerSelect.innerHTML = "";
     if (!players.length){
       const opt = document.createElement("option");
@@ -1364,13 +1360,26 @@ function renderPlayerSelect(){
   safeChart(cPlayerPts, labels, ptsDay, "Player Points per Match Day");
   safeChart(cPlayerCum, labels, ptsCum, "Player Cumulative Points");
 
-  // Player highlights (same style as tab2)
-  safeSet(elPHiPlayed, String(played));
-  safeSet(elPHiBestDay, bestMatchDay(byDay));
-  const streak = longestWinrateStreak(byDay, 60);
-  safeSet(elPHiStreak, String(streak) + " days");
-  const avgPts = byDay.length ? (byDay.reduce((s,d)=>s + d.points, 0) / byDay.length) : 0;
-  safeSet(elPHiAvgPts, avgPts.toFixed(1));
+  // Player highlights (single-match stats, follow active filters)
+  const highestPoints = ranged.length ? Math.max(...ranged.map(r => r.points || 0)) : 0;
+
+  function rowWinrate(r){
+    const playedRow = r.played || ((r.wins||0) + (r.losses||0));
+    return playedRow ? ((r.wins||0) / playedRow) * 100 : 0;
+  }
+
+  const highestWR = ranged.length ? Math.max(...ranged.map(rowWinrate)) : 0;
+  const lowestWR  = ranged.length ? Math.min(...ranged.map(rowWinrate)) : 0;
+
+  // Mapping:
+  // pHiBestDay  -> Highest Points Achieved
+  // pHiPlayed   -> Highest Win Rate (Single Match)
+  // pHiAvgPts   -> Lowest Win Rate (Single Match)
+  // pHiStreak   -> Total Played
+  safeSet(elPHiBestDay, highestPoints ? `${highestPoints} pts` : "-");
+  safeSet(elPHiPlayed, ranged.length ? `${highestWR.toFixed(1)}%` : "-");
+  safeSet(elPHiAvgPts, ranged.length ? `${lowestWR.toFixed(1)}%` : "-");
+  safeSet(elPHiStreak, String(played));
 }
 
 
@@ -1389,9 +1398,8 @@ async function loadLeaderboard(){
     matchesRows = parsed.length ? toMatches(parsed) : [];
   }
 
-async function loadAll(){
-
-  // --- Leaderboard ---
+  async async function loadAll(){
+  // Leaderboard should render even if Matches fails
   try{
     await loadLeaderboard();
     safeSet(elLastUpdate, nowHHMM());
@@ -1402,17 +1410,22 @@ async function loadAll(){
     console.error("Leaderboard load failed:", e);
   }
 
-  // --- Matches (Tab 2 & 3) ---
+  // Matches (tabs 2 & 3) should not break tab1
   try{
     await loadMatches();
-
-    // ⬇ WAJIB setelah matchesRows terisi
-    renderPlayerSelect();
-    renderMatchDayTrends();
-    renderPlayerTrends();
-
+    if (MATCHES_CSV_URL){
+      renderMatchDayTrends();
+      renderPlayerSelect();
+      renderPlayerTrends();
+    } else {
+      renderMatchDayTrends();
+      renderPlayerTrends();
+    }
   } catch (e){
     console.error("Matches load failed:", e);
+    // still try to render empty states
+    renderMatchDayTrends();
+    renderPlayerTrends();
   }
 }
 
