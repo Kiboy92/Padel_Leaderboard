@@ -1089,6 +1089,11 @@ function longestWinrateStreak(days, thresholdPct){
     renderLeaderboard();
   });
 
+  // TAB 3 listeners
+if (elPlayerSelect) elPlayerSelect.addEventListener("change", renderPlayerTrends);
+if (elPlayerRange)  elPlayerRange.addEventListener("change", renderPlayerTrends);
+if (elPlayerMonth)  elPlayerMonth.addEventListener("change", renderPlayerTrends);
+
   // =========================
   // Trends helpers (Match Day aggregation)
   // =========================
@@ -1780,25 +1785,36 @@ function renderMatchDayTrends(){
 
 }
 
-
 function renderPlayerSelect(){
-    const players = uniquePlayersFromMatches(matchesRows);
-    elPlayerSelect.innerHTML = "";
-    if (!players.length){
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "No players";
-      elPlayerSelect.appendChild(opt);
-      return;
-    }
-    players.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      elPlayerSelect.appendChild(opt);
-    });
+  if (!elPlayerSelect) return;
+
+  const prev = elPlayerSelect.value;
+  const players = uniquePlayersFromMatches(matchesRows);
+
+  elPlayerSelect.innerHTML = "";
+
+  if (!players.length){
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No players";
+    elPlayerSelect.appendChild(opt);
+    return;
   }
 
+  players.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    elPlayerSelect.appendChild(opt);
+  });
+
+  // restore selection if possible, otherwise pick first
+  elPlayerSelect.value = players.includes(prev) ? prev : players[0];
+
+  // trigger render supaya Tab 3 langsung update
+  renderPlayerTrends();
+}
+  
   function renderPlayerTrends(){
   if (!MATCHES_CSV_URL){
     safeSet(elPlayerHint,
