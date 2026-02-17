@@ -171,55 +171,9 @@
       .right{width:100%;}
     }
   
-      /* =========================
-NOTES — TAB 2 & TAB 3 (Trends)
-
-DATA SOURCE
-- Tab 1 pakai LEADERBOARD CSV (akumulasi points manual dari kamu).
-- Tab 2 & Tab 3 pakai MATCHES CSV (per session/match row):
-  Date, Session/Court, Player, Win, Lose, Points, Played, Winrate
-
-FILTER LOGIC (IMPORTANT)
-- Semua angka, chart, dan highlight mengikuti filter yang dipilih:
-  - Range: Last 30/60/365/All
-  - Month: Jan–Dec / All months
-- Jika Range = "All", beberapa metrik pembanding (yang butuh periode sebelumnya) akan tampil "-".
-
-MOST IMPROVED (TAB 2) — COMBINED SCORE
-Tujuan: cari player yang paling meningkat secara "performance", bukan cuma karena main lebih sering.
-Definisi: bandingkan range aktif vs periode sebelumnya dengan durasi yang sama.
-- ΔPoints per Match = avgPointsNow - avgPointsPrev
-  avgPoints = totalPoints / totalPlayed
-- ΔWinrate = winrateNow - winratePrev (dalam %)
-  winrate = totalWins / (totalWins + totalLosses) * 100
-
-Karena skala points/match dan winrate berbeda, kita normalize pakai Z-score:
-  zPts = (ΔPtsPerMatch - mean) / std
-  zWR  = (ΔWR - mean) / std
-Skor gabungan:
-  score = (0.6 * zPts) + (0.4 * zWR)
-
-Output label (contoh):
-  Kiboy (+1.8 pts/match, +6.2% WR)
-
-Kapan bisa tampil "-"?
-- Range = "All" (tidak ada periode pembanding)
-- Atau periode sebelumnya kosong (data belum cukup lama)
-
-TAB 2 HIGHLIGHTS
-- "Highest Point in a Single Match" = points tertinggi dari 1 row match (sesuai filter)
-- "Most Active" = total played tertinggi (sesuai filter)
-- "Longest Winrate Streak (by day)" = streak match-day dengan winrate ≥ threshold (default 60%)
-
-TAB 3 HIGHLIGHTS
-- Highest Points Achieved = max(points) pada 1 match row (tanpa tanggal)
-- Highest Win Rate (Single Match) = max(winrate per row)
-- Lowest Win Rate (Single Match)  = min(winrate per row)
-- Total Played = total (win+lose) pada filter aktif
-
-STABILITY RULE
-- Gunakan safeSet(...) untuk update DOM agar halaman tidak freeze jika ID element hilang/typo.
-========================= */
+    /* =========================
+       BROADCAST HIGHLIGHTS
+       ========================= */
     .highlightGrid{
       display:grid;
       gap:12px;
@@ -295,7 +249,96 @@ STABILITY RULE
       border-radius: 18px;
     }
 
-  </style>
+  
+    /* =========================
+       PHASE 1 & 2: Ranking Evolution + Power Index (UI)
+       ========================= */
+    .sectionTitle{
+      margin: 14px 2px 8px;
+      font-size: 13px;
+      color: rgba(233,236,255,.75);
+      letter-spacing: .2px;
+    }
+    .powerBoard{
+      margin-top: 12px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:12px;
+    }
+    @media (max-width: 980px){
+      .powerBoard{grid-template-columns:1fr}
+    }
+    .powerBadges{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 760px){
+      .powerBadges{grid-template-columns:1fr}
+    }
+    .badgeCard{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(700px 240px at 15% 0%, rgba(255,215,0,.12), transparent 60%),
+        radial-gradient(700px 240px at 85% 40%, rgba(159,176,255,.12), transparent 62%),
+        linear-gradient(180deg, rgba(11,16,32,.70), rgba(11,16,32,.40));
+      padding: 12px 12px 10px;
+      box-shadow: 0 14px 34px rgba(0,0,0,.30);
+      overflow:hidden;
+      position:relative;
+    }
+    .badgeTop{display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+    .badgeIcon{
+      width:42px; height:42px;
+      border-radius:14px;
+      display:grid; place-items:center;
+      background: rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      font-size: 20px;
+      flex:0 0 auto;
+    }
+    .badgeLabel{font-size:12px; color:rgba(233,236,255,.72)}
+    .badgeValue{margin-top:8px; font-size:18px; font-weight:800; line-height:1.15}
+    .badgeSub{margin-top:6px; font-size:12px; color:rgba(233,236,255,.60)}
+    .powerTableWrap{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(11,16,32,.40);
+      padding: 10px;
+      overflow:auto;
+    }
+    .powerTable{
+      width:100%;
+      border-collapse:collapse;
+      min-width: 560px;
+    }
+    .powerTable th, .powerTable td{
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      white-space: nowrap;
+    }
+    .powerTable th{
+      font-size:12px;
+      color:rgba(233,236,255,.75);
+      text-align:left;
+    }
+    .kpiBar{
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.10);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .kpiBar > span{
+      display:block;
+      height:100%;
+      background: rgba(233,236,255,.75);
+      width: 0%;
+      transition: width 300ms ease;
+    }
+
+</style>
 </head>
 
 <body>
@@ -475,7 +518,69 @@ STABILITY RULE
 </div>
 
         <div class="muted" style="margin-top:10px" id="matchesHint"></div>
-      </section>
+      
+        <div class="sectionTitle">Ranking Evolution (by cumulative points)</div>
+        <div>
+          <canvas id="chartRankEvolution" width="900" height="280"></canvas>
+          <div class="muted" style="margin-top:6px">Rank 1 ada di atas. Garis beda pola (dash) per player. Hover untuk detail.</div>
+        </div>
+
+        <div class="sectionTitle">Power Index</div>
+        <div class="powerBoard">
+          <div class="powerBadges">
+            <div class="badgeCard">
+              <div class="badgeTop">
+                <div>
+                  <div class="badgeLabel">⚡ Most Dangerous</div>
+                  <div class="badgeValue" id="powerMostDangerous">-</div>
+                  <div class="badgeSub">Power Index tertinggi</div>
+                </div>
+                <div class="badgeIcon">⚡</div>
+              </div>
+            </div>
+
+            <div class="badgeCard">
+              <div class="badgeTop">
+                <div>
+                  <div class="badgeLabel">🎯 Most Efficient</div>
+                  <div class="badgeValue" id="powerMostEfficient">-</div>
+                  <div class="badgeSub">WR tinggi, volume main relatif rendah</div>
+                </div>
+                <div class="badgeIcon">🎯</div>
+              </div>
+            </div>
+
+            <div class="badgeCard">
+              <div class="badgeTop">
+                <div>
+                  <div class="badgeLabel">🧱 Biggest Grinder</div>
+                  <div class="badgeValue" id="powerMostGrinder">-</div>
+                  <div class="badgeSub">Total played terbanyak</div>
+                </div>
+                <div class="badgeIcon">🧱</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="powerTableWrap">
+            <table class="powerTable">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th class="num">Power</th>
+                  <th>Bar</th>
+                  <th class="num">WR</th>
+                  <th class="num">Pts/Match</th>
+                  <th class="num">Played</th>
+                </tr>
+              </thead>
+              <tbody id="powerTableBody"></tbody>
+            </table>
+            <div class="muted" style="margin-top:8px">Power = 0.5×Winrate + 0.3×(Pts/Match norm) + 0.2×(Activity norm).</div>
+          </div>
+        </div>
+
+</section>
 
       <!-- TAB 3: Trend Individual -->
       <section id="tab3" class="tabPanel">
@@ -627,6 +732,12 @@ const elStreakThresholdLabel = document.getElementById("streakThresholdLabel");
 const cMatchesDay = document.getElementById("chartMatchesDay");
 const cWinrateDay = document.getElementById("chartWinrateDay");
 
+  const cRankEvolution = document.getElementById("chartRankEvolution");
+  const elPowerMostDangerous = document.getElementById("powerMostDangerous");
+  const elPowerMostEfficient = document.getElementById("powerMostEfficient");
+  const elPowerMostGrinder = document.getElementById("powerMostGrinder");
+  const elPowerTableBody = document.getElementById("powerTableBody");
+
   const elHiLongestStreak = document.getElementById("hiLongestStreak");
   const elHiMostImproved = document.getElementById("hiMostImproved");
   const elHiMostActive = document.getElementById("hiMostActive");
@@ -657,11 +768,11 @@ const cWinrateDay = document.getElementById("chartWinrateDay");
   }
 
   function uniquePlayersFromMatches(records){
-  return Array.from(
-    new Set((records || []).map(r => (r.player || "").trim()).filter(Boolean))
-  ).sort((a,b)=> a.localeCompare(b));
-}
-  
+    return Array.from(new Set((records || []).map(r => (r.player || "").trim()).filter(Boolean)))
+      .sort((a,b)=>a.localeCompare(b));
+  }
+
+
   function applyMonthFilter(records, monthValue){
     if (!monthValue || monthValue === "all") return records;
     const m = Number(monthValue);
@@ -978,14 +1089,6 @@ function longestWinrateStreak(days, thresholdPct){
     renderLeaderboard();
   });
 
-  // TAB 2 & TAB 3 listeners (keep UI reactive)
-  if (elTrendRange) elTrendRange.addEventListener("change", renderMatchDayTrends);
-  if (elTrendMonth) elTrendMonth.addEventListener("change", renderMatchDayTrends);
-
-  if (elPlayerSelect) elPlayerSelect.addEventListener("change", renderPlayerTrends);
-  if (elPlayerRange) elPlayerRange.addEventListener("change", renderPlayerTrends);
-  if (elPlayerMonth) elPlayerMonth.addEventListener("change", renderPlayerTrends);
-
   // =========================
   // Trends helpers (Match Day aggregation)
   // =========================
@@ -1020,7 +1123,172 @@ function longestWinrateStreak(days, thresholdPct){
   // =========================
   // Tiny canvas chart (line)
   // =========================
-  function drawLineChart(canvas, labels, values, title, suffix=""){
+  
+  // =========================
+  // PHASE 1: Ranking Evolution (cumulative points -> rank per day)
+  // =========================
+  function computeRankingEvolution(records){
+    // returns {labels:[date], seriesMap:{player:[rank...]}}
+    if (!records || records.length === 0) return { labels: [], seriesMap: {} };
+
+    // collect unique dates sorted
+    const dates = Array.from(new Set(records.map(r => r.date))).sort();
+
+    // collect players
+    const players = Array.from(new Set(records.map(r => r.player))).sort((a,b)=>a.localeCompare(b));
+
+    // cumulative points per player as we move through dates
+    const cum = {};
+    players.forEach(p => cum[p] = 0);
+
+    // pre-group points by date+player for speed
+    const byDate = new Map(); // date -> Map(player -> points)
+    for (const r of records){
+      if (!byDate.has(r.date)) byDate.set(r.date, new Map());
+      const mp = byDate.get(r.date);
+      mp.set(r.player, (mp.get(r.player) || 0) + (r.points || 0));
+    }
+
+    const seriesMap = {};
+    players.forEach(p => seriesMap[p] = []);
+
+    for (const d of dates){
+      const mp = byDate.get(d) || new Map();
+      // update cumulative
+      for (const p of players){
+        cum[p] += (mp.get(p) || 0);
+      }
+      // compute ranks for this date based on cumulative points (desc)
+      const sorted = [...players].sort((a,b)=> (cum[b]-cum[a]) || a.localeCompare(b));
+      const rankOf = {};
+      sorted.forEach((p, i)=> rankOf[p] = i+1);
+
+      players.forEach(p => seriesMap[p].push(rankOf[p] || null));
+    }
+
+    return { labels: dates, seriesMap };
+  }
+
+  // =========================
+  // PHASE 2: Power Index
+  // Power = 0.5×Winrate + 0.3×(Pts/Match norm) + 0.2×(Activity norm)
+  // =========================
+  function aggregatePlayers(records){
+    const m = new Map(); // player -> {wins, losses, played, points}
+    for (const r of (records || [])){
+      const p = (r.player || "").trim();
+      if (!p) continue;
+      const wins = r.wins || 0;
+      const losses = r.losses || 0;
+      const played = r.played || (wins + losses);
+      const points = r.points || 0;
+
+      if (!m.has(p)) m.set(p, { player:p, wins:0, losses:0, played:0, points:0 });
+      const a = m.get(p);
+      a.wins += wins;
+      a.losses += losses;
+      a.played += played;
+      a.points += points;
+    }
+    return Array.from(m.values());
+  }
+
+  function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+  function computePowerIndex(records){
+    const agg = aggregatePlayers(records);
+    if (!agg.length) return [];
+
+    // base metrics
+    agg.forEach(a=>{
+      const totalWL = (a.wins + a.losses) || 0;
+      a.winrate = totalWL ? (a.wins / totalWL) * 100 : 0;
+      a.ppm = a.played ? (a.points / a.played) : 0; // points per match
+    });
+
+    const ppms = agg.map(a=>a.ppm);
+    const plays = agg.map(a=>a.played);
+
+    const minPPM = Math.min(...ppms), maxPPM = Math.max(...ppms);
+    const minPl  = Math.min(...plays), maxPl  = Math.max(...plays);
+
+    const denomPPM = (maxPPM - minPPM) || 1;
+    const denomPl  = (maxPl - minPl) || 1;
+
+    agg.forEach(a=>{
+      a.ppmNorm = clamp01((a.ppm - minPPM) / denomPPM) * 100;
+      a.actNorm = clamp01((a.played - minPl) / denomPl) * 100;
+      a.power = (0.5 * a.winrate) + (0.3 * a.ppmNorm) + (0.2 * a.actNorm);
+    });
+
+    // sort desc
+    agg.sort((a,b)=> (b.power - a.power) || b.winrate - a.winrate || b.ppm - a.ppm || a.player.localeCompare(b.player));
+    return agg;
+  }
+
+  function median(values){
+    if (!values.length) return 0;
+    const s = [...values].sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length % 2 ? s[mid] : (s[mid-1] + s[mid]) / 2;
+  }
+
+
+  function renderPowerIndex(records){
+    if (!elPowerTableBody) return;
+    const arr = computePowerIndex(records);
+
+    // badges
+    if (elPowerMostDangerous){
+      safeSet(elPowerMostDangerous, arr.length ? `${arr[0].player} (${arr[0].power.toFixed(1)})` : "-");
+    }
+
+    if (elPowerMostGrinder){
+      if (arr.length){
+        const grinder = [...arr].sort((a,b)=> (b.played - a.played) || (b.power - a.power))[0];
+        safeSet(elPowerMostGrinder, `${grinder.player} (${grinder.played})`);
+      } else safeSet(elPowerMostGrinder, "-");
+    }
+
+    if (elPowerMostEfficient){
+      if (arr.length){
+        const medPlayed = median(arr.map(x=>x.played));
+        const candidates = arr.filter(x=> x.played <= medPlayed && x.played > 0);
+        const eff = (candidates.length ? candidates : arr).sort((a,b)=> (b.winrate - a.winrate) || (b.power - a.power))[0];
+        safeSet(elPowerMostEfficient, `${eff.player} (${eff.winrate.toFixed(1)}%)`);
+      } else safeSet(elPowerMostEfficient, "-");
+    }
+
+    // table
+    elPowerTableBody.innerHTML = "";
+    if (!arr.length){
+      elPowerTableBody.innerHTML = `<tr><td colspan="6" class="muted">No data</td></tr>`;
+      return;
+    }
+
+    const maxPower = Math.max(...arr.map(x=>x.power)) || 1;
+
+    arr.forEach((p, i)=>{
+      const tr = document.createElement("tr");
+      const pct = Math.max(0, Math.min(100, (p.power / maxPower) * 100));
+
+      tr.innerHTML = `
+        <td><b>${escapeHtml(p.player)}</b></td>
+        <td class="num"><b>${p.power.toFixed(1)}</b></td>
+        <td>
+          <div class="kpiBar"><span style="width:${pct.toFixed(0)}%"></span></div>
+        </td>
+        <td class="num">${p.winrate.toFixed(1)}%</td>
+        <td class="num">${p.ppm.toFixed(1)}</td>
+        <td class="num">${p.played}</td>
+      `;
+      elPowerTableBody.appendChild(tr);
+    });
+  }
+
+
+
+function drawLineChart(canvas, labels, values, title, suffix=""){
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const w = canvas.width;
@@ -1129,7 +1397,163 @@ function longestWinrateStreak(days, thresholdPct){
     }
   }
 
-  function roundRect(ctx, x, y, w, h, r, fill, stroke){
+  
+  // Multi-line chart for Ranking Evolution (dash patterns per series, no per-series colors)
+  function drawMultiLineChart(canvas, labels, seriesMap, title, suffix=""){
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+
+    const seriesNames = Object.keys(seriesMap || {});
+    const n = labels ? labels.length : 0;
+
+    // store for hover
+    canvas._multiChartData = { labels, seriesMap, seriesNames, suffix, title };
+
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 56, padR = 18, padT = 18, padB = 34;
+    const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+
+    ctx.fillStyle = "rgba(233,236,255,.85)";
+    ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(title || "", padL, 14);
+
+    if (!seriesNames.length || !n){
+      ctx.fillStyle = "rgba(233,236,255,.6)";
+      ctx.fillText("No data", padL, padT + 18);
+      return;
+    }
+
+    // compute global min/max across all series (ignore null)
+    let minV = Infinity, maxV = -Infinity;
+    for (const name of seriesNames){
+      const arr = seriesMap[name] || [];
+      for (const v of arr){
+        if (v === null || v === undefined) continue;
+        if (v < minV) minV = v;
+        if (v > maxV) maxV = v;
+      }
+    }
+    if (!Number.isFinite(minV) || !Number.isFinite(maxV)){
+      ctx.fillStyle = "rgba(233,236,255,.6)";
+      ctx.fillText("No data", padL, padT + 18);
+      return;
+    }
+    const span = (maxV - minV) || 1;
+
+    // grid + y ticks
+    ctx.strokeStyle = "rgba(255,255,255,.07)";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "rgba(233,236,255,.55)";
+    ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+
+    for (let i=0;i<=4;i++){
+      const y = padT + (plotH * i/4);
+      const val = maxV - (span * i/4);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+      ctx.fillText(`${val.toFixed(0)}${suffix}`, 10, y+4);
+    }
+
+    // x labels (few)
+    ctx.fillStyle = "rgba(233,236,255,.5)";
+    const step = Math.max(1, Math.floor(n/5));
+    for (let i=0;i<n;i+=step){
+      const x = padL + (plotW * (n===1 ? 0 : i/(n-1)));
+      ctx.fillText(labels[i], x-12, h-12);
+    }
+
+    // series styles: dash patterns
+    const dashPatterns = [
+      [], [6,4], [2,3], [10,4,2,4], [1,2], [12,5]
+    ];
+
+    seriesNames.forEach((name, si)=>{
+      const values = seriesMap[name] || [];
+      ctx.save();
+      ctx.strokeStyle = "rgba(233,236,255,.78)";
+      ctx.lineWidth = (si===0 ? 2.6 : 2);
+      ctx.setLineDash(dashPatterns[si % dashPatterns.length]);
+
+      ctx.beginPath();
+      for (let i=0;i<n;i++){
+        const v = values[i];
+        if (v === null || v === undefined) continue;
+        const x = padL + (plotW * (n===1 ? 0 : i/(n-1)));
+        const y = padT + plotH - ((v - minV)/span) * plotH;
+        if (i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // mini legend (top-right)
+    ctx.fillStyle = "rgba(233,236,255,.65)";
+    ctx.font = "11px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    const legendMax = Math.min(5, seriesNames.length);
+    for (let i=0;i<legendMax;i++){
+      const name = seriesNames[i];
+      ctx.fillText(name, w - padR - 120, padT + 14 + i*14);
+    }
+    if (seriesNames.length > legendMax){
+      ctx.fillText(`+${seriesNames.length - legendMax} more`, w - padR - 120, padT + 14 + legendMax*14);
+    }
+  }
+
+  function attachMultiCanvasTooltip(canvas){
+    if (!canvas) return;
+    const tooltip = document.createElement("div");
+    tooltip.style.position = "fixed";
+    tooltip.style.pointerEvents = "none";
+    tooltip.style.zIndex = 9999;
+    tooltip.style.padding = "8px 10px";
+    tooltip.style.borderRadius = "12px";
+    tooltip.style.border = "1px solid rgba(255,255,255,.12)";
+    tooltip.style.background = "rgba(11,16,32,.92)";
+    tooltip.style.color = "rgba(233,236,255,.92)";
+    tooltip.style.fontSize = "12px";
+    tooltip.style.boxShadow = "0 14px 30px rgba(0,0,0,.35)";
+    tooltip.style.display = "none";
+    document.body.appendChild(tooltip);
+
+    function hide(){ tooltip.style.display = "none"; }
+
+    canvas.addEventListener("mouseleave", hide);
+    canvas.addEventListener("mousemove", (e)=>{
+      const d = canvas._multiChartData;
+      if (!d || !d.labels || !d.labels.length) return hide();
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+
+      const padL = 56, padR = 18;
+      const plotW = rect.width - padL - padR;
+      const n = d.labels.length;
+
+      const xClamped = Math.max(padL, Math.min(rect.width - padR, x));
+      const t = (xClamped - padL) / (plotW || 1);
+      const idx = Math.round(t * (n-1));
+      const label = d.labels[idx];
+
+      // show top 3 series at that idx
+      const rows = d.seriesNames.map(name => ({
+        name,
+        v: (d.seriesMap[name] || [])[idx]
+      })).filter(r => r.v !== null && r.v !== undefined)
+        .sort((a,b)=>a.v-b.v)
+        .slice(0, 3);
+
+      const lines = rows.map(r => `${r.name}: ${r.v}${d.suffix || ""}`).join("<br/>");
+      tooltip.innerHTML = `<b>${label}</b><br/>${lines || "—"}`;
+      tooltip.style.display = "block";
+      tooltip.style.left = (e.clientX + 14) + "px";
+      tooltip.style.top  = (e.clientY + 14) + "px";
+    });
+  }
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke){
     const rr = Math.min(r, w/2, h/2);
     ctx.beginPath();
     ctx.moveTo(x+rr, y);
@@ -1212,91 +1636,6 @@ function mostImproved(current, previous){
   const sign = bestDelta>=0 ? "+" : "";
   return `${bestP} (${sign}${bestDelta} pts)`;
 }
-// =========================
-// Most Improved (Combined: Points/Match + Winrate) — TAB 2
-// =========================
-function aggregateByPlayer(records){
-  const m = new Map(); // player -> {points, wins, losses, played}
-  for (const r of (records || [])){
-    const p = String(r.player || "").trim();
-    if (!p) continue;
-
-    const wins = (r.wins || 0);
-    const losses = (r.losses || 0);
-    const played = r.played || (wins + losses);
-    const points = (r.points || 0);
-
-    if (!m.has(p)) m.set(p, { points:0, wins:0, losses:0, played:0 });
-    const a = m.get(p);
-    a.points += points;
-    a.wins += wins;
-    a.losses += losses;
-    a.played += played;
-  }
-  return m;
-}
-
-function winrateFromAgg(a){
-  const total = (a.wins || 0) + (a.losses || 0);
-  return total ? (a.wins / total) * 100 : 0;
-}
-
-function mean(arr){
-  return arr.length ? arr.reduce((s,x)=>s+x,0) / arr.length : 0;
-}
-
-function std(arr){
-  if (arr.length < 2) return 1;
-  const mu = mean(arr);
-  const v = mean(arr.map(x => (x-mu)*(x-mu)));
-  return Math.sqrt(v) || 1;
-}
-
-// Returns { label: string, details: object|null }
-function mostImprovedCombined(currentRecords, previousRecords, wPoints=0.6, wWR=0.4){
-  if (!previousRecords || previousRecords.length === 0) return { label:"-", details:null };
-
-  const cur = aggregateByPlayer(currentRecords);
-  const prev = aggregateByPlayer(previousRecords);
-
-  const players = Array.from(new Set([...cur.keys(), ...prev.keys()]));
-
-  const rows = players.map(p=>{
-    const c = cur.get(p) || {points:0,wins:0,losses:0,played:0};
-    const pr = prev.get(p) || {points:0,wins:0,losses:0,played:0};
-
-    const cAvgPts = c.played ? (c.points / c.played) : 0;
-    const pAvgPts = pr.played ? (pr.points / pr.played) : 0;
-
-    const dPtsPerMatch = cAvgPts - pAvgPts;
-    const dWR = winrateFromAgg(c) - winrateFromAgg(pr);
-
-    return { p, dPtsPerMatch, dWR };
-  });
-
-  const ptsArr = rows.map(r=>r.dPtsPerMatch);
-  const wrArr  = rows.map(r=>r.dWR);
-
-  const muPts = mean(ptsArr), sdPts = std(ptsArr);
-  const muWR  = mean(wrArr),  sdWR  = std(wrArr);
-
-  let best = null;
-  for (const r of rows){
-    const zPts = (r.dPtsPerMatch - muPts) / sdPts;
-    const zWR  = (r.dWR - muWR) / sdWR;
-    const score = (wPoints * zPts) + (wWR * zWR);
-    if (!best || score > best.score) best = { ...r, score };
-  }
-
-  if (!best) return { label:"-", details:null };
-
-  const signPts = best.dPtsPerMatch >= 0 ? "+" : "";
-  const signWR  = best.dWR >= 0 ? "+" : "";
-  const label = `${best.p} (${signPts}${best.dPtsPerMatch.toFixed(1)} pts/match, ${signWR}${best.dWR.toFixed(1)}% WR)`;
-
-  return { label, details: best };
-}
-
 
 function longestWinrateStreak(days, thresholdPct){
   let best=0, cur=0;
@@ -1402,8 +1741,7 @@ function renderMatchDayTrends(){
     });
     prev = applyMonthFilter(prev, elTrendMonth ? elTrendMonth.value : "all");
 
-    const out = mostImprovedCombined(ranged, prev, 0.6, 0.4);
-    safeSet(elHiMostImproved, out.label);
+    safeSet(elHiMostImproved, mostImproved(ranged, prev));
   } else {
     safeSet(elHiMostImproved, "-");
   }
@@ -1425,6 +1763,21 @@ function renderMatchDayTrends(){
   safeChart(cPointsCum, labels, ptsCum, "Cumulative Points (Growth)");
   safeChart(cMatchesDay, labels, matchesDay, "Total Matches per Match Day");
   safeChart(cWinrateDay, labels, winrateDay, "Club Winrate Trend per Match Day", "%");
+
+  // ===== Phase 1: Ranking Evolution =====
+  const evo = computeRankingEvolution(ranged);
+  const evoLabels = evo.labels.map(d => d.slice(5)); // show MM-DD on axis/hover
+  const players = Object.keys(evo.seriesMap || {});
+  const maxRank = players.length || 1;
+  const invSeries = {};
+  for (const p of players){
+    invSeries[p] = (evo.seriesMap[p] || []).map(rk => (rk ? (maxRank + 1 - rk) : null));
+  }
+  drawMultiLineChart(cRankEvolution, evoLabels, invSeries, "Ranking Evolution (Rank 1 on top)", "");
+
+  // ===== Phase 2: Power Index =====
+  renderPowerIndex(ranged);
+
 }
 
 
@@ -1521,9 +1874,8 @@ async function loadLeaderboard(){
     matchesRows = parsed.length ? toMatches(parsed) : [];
   }
 
-async function loadAll(){
-
-  // --- Leaderboard ---
+  async async function loadAll(){
+  // Leaderboard should render even if Matches fails
   try{
     await loadLeaderboard();
     safeSet(elLastUpdate, nowHHMM());
@@ -1534,25 +1886,30 @@ async function loadAll(){
     console.error("Leaderboard load failed:", e);
   }
 
-  // --- Matches (Tab 2 & 3) ---
+  // Matches (tabs 2 & 3) should not break tab1
   try{
     await loadMatches();
-
-    // ⬇ WAJIB setelah matchesRows terisi
-    renderPlayerSelect();
-    renderMatchDayTrends();
-    renderPlayerTrends();
-
+    if (MATCHES_CSV_URL){
+      renderMatchDayTrends();
+      renderPlayerSelect();
+      renderPlayerTrends();
+    } else {
+      renderMatchDayTrends();
+      renderPlayerTrends();
+    }
   } catch (e){
     console.error("Matches load failed:", e);
+    // still try to render empty states
+    renderMatchDayTrends();
+    renderPlayerTrends();
   }
 }
+  // enable hover tooltip for Ranking Evolution
+  attachMultiCanvasTooltip(cRankEvolution);
+
 
   loadAll();
   setInterval(loadAll, 60000);
 </script>
 </body>
 </html>
-
-
-
